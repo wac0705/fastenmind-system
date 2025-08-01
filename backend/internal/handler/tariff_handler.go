@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/fastenmind/fastener-api/internal/service"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 

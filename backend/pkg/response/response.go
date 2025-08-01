@@ -15,11 +15,15 @@ type Response struct {
 }
 
 // Success sends a success response
-func Success(c echo.Context, data interface{}) error {
-	return c.JSON(http.StatusOK, Response{
+func Success(c echo.Context, data interface{}, message ...string) error {
+	resp := Response{
 		Success: true,
 		Data:    data,
-	})
+	}
+	if len(message) > 0 {
+		resp.Message = message[0]
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 // SuccessWithMessage sends a success response with message
@@ -32,11 +36,14 @@ func SuccessWithMessage(c echo.Context, message string, data interface{}) error 
 }
 
 // Error sends an error response
-func Error(c echo.Context, status int, message string) error {
-	return c.JSON(status, Response{
+func Error(c echo.Context, status int, message string, err ...error) error {
+	resp := Response{
 		Success: false,
 		Error:   message,
-	})
+	}
+	// If an error is provided, we can optionally log it but not send it to the client
+	// This maintains backward compatibility while accepting the error parameter
+	return c.JSON(status, resp)
 }
 
 // Created sends a created response

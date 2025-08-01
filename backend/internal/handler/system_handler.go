@@ -61,7 +61,7 @@ func (h *SystemHandler) GetSystemConfig(c echo.Context) error {
 	key := c.Param("key")
 	companyID := getCompanyIDFromContext(c)
 
-	config, err := h.systemService.GetSystemConfig(c.Request().Context(), key, companyID)
+	config, err := h.systemService.GetSystemConfig(c.Request().Context(), key, &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusNotFound, "System config not found", err)
 	}
@@ -73,7 +73,7 @@ func (h *SystemHandler) ListSystemConfigs(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
-	configs, err := h.systemService.ListSystemConfigs(c.Request().Context(), companyID, params)
+	configs, err := h.systemService.ListSystemConfigs(c.Request().Context(), &companyID, params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list system configs", err)
 	}
@@ -101,7 +101,7 @@ func (h *SystemHandler) GetConfigValue(c echo.Context) error {
 	key := c.Param("key")
 	companyID := getCompanyIDFromContext(c)
 
-	value, err := h.systemService.GetConfigValue(c.Request().Context(), key, companyID, nil)
+	value, err := h.systemService.GetConfigValue(c.Request().Context(), key, &companyID, nil)
 	if err != nil {
 		return response.Error(c, http.StatusNotFound, "Config value not found", err)
 	}
@@ -124,7 +124,7 @@ func (h *SystemHandler) SetConfigValue(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
 	}
 
-	if err := h.systemService.SetConfigValue(c.Request().Context(), key, req.Value, companyID, userID); err != nil {
+	if err := h.systemService.SetConfigValue(c.Request().Context(), key, req.Value, &companyID, userID); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to set config value", err)
 	}
 
@@ -187,7 +187,7 @@ func (h *SystemHandler) ListRoles(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
-	roles, err := h.systemService.ListRoles(c.Request().Context(), companyID, params)
+	roles, err := h.systemService.ListRoles(c.Request().Context(), &companyID, params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list roles", err)
 	}
@@ -376,7 +376,7 @@ func (h *SystemHandler) ListSystemNotifications(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
-	notifications, err := h.systemService.ListSystemNotifications(c.Request().Context(), companyID, params)
+	notifications, err := h.systemService.ListSystemNotifications(c.Request().Context(), &companyID, params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list system notifications", err)
 	}
@@ -443,7 +443,7 @@ func (h *SystemHandler) GetUnreadNotificationCount(c echo.Context) error {
 func (h *SystemHandler) ListSystemHealth(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 
-	healthList, err := h.systemService.ListSystemHealth(c.Request().Context(), companyID)
+	healthList, err := h.systemService.ListSystemHealth(c.Request().Context(), &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list system health", err)
 	}
@@ -465,7 +465,7 @@ func (h *SystemHandler) ListBackupRecords(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
-	backups, total, err := h.systemService.ListBackupRecords(c.Request().Context(), companyID, params)
+	backups, total, err := h.systemService.ListBackupRecords(c.Request().Context(), &companyID, params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list backup records", err)
 	}
@@ -487,7 +487,7 @@ func (h *SystemHandler) PerformBackup(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 
-	backup, err := h.systemService.PerformBackup(c.Request().Context(), req.Type, companyID, userID)
+	backup, err := h.systemService.PerformBackup(c.Request().Context(), req.Type, &companyID, userID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to perform backup", err)
 	}
@@ -500,7 +500,7 @@ func (h *SystemHandler) ListSystemTasks(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
-	tasks, total, err := h.systemService.ListSystemTasks(c.Request().Context(), companyID, params)
+	tasks, total, err := h.systemService.ListSystemTasks(c.Request().Context(), &companyID, params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list system tasks", err)
 	}
@@ -525,7 +525,7 @@ func (h *SystemHandler) ScheduleTask(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 
-	task, err := h.systemService.ScheduleTask(c.Request().Context(), req.Name, req.Type, req.Parameters, req.ScheduledAt, companyID, userID)
+	task, err := h.systemService.ScheduleTask(c.Request().Context(), req.Name, req.Type, req.Parameters, req.ScheduledAt, &companyID, userID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to schedule task", err)
 	}
@@ -552,7 +552,7 @@ func (h *SystemHandler) ProcessPendingTasks(c echo.Context) error {
 func (h *SystemHandler) GetSystemStatistics(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 
-	stats, err := h.systemService.GetSystemStatistics(c.Request().Context(), companyID)
+	stats, err := h.systemService.GetSystemStatistics(c.Request().Context(), &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to get system statistics", err)
 	}
@@ -600,7 +600,7 @@ func (h *SystemHandler) InitializeDefaultRoles(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 
-	if err := h.systemService.InitializeDefaultRoles(c.Request().Context(), companyID, userID); err != nil {
+	if err := h.systemService.InitializeDefaultRoles(c.Request().Context(), &companyID, userID); err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to initialize default roles", err)
 	}
 
