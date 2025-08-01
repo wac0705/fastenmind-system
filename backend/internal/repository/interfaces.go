@@ -3,7 +3,7 @@ package repository
 // Placeholder interfaces for compilation
 type CompanyRepository interface{}
 type CustomerRepository interface{}
-type InquiryRepository interface{}
+// InquiryRepository is defined in inquiry_repository.go
 type ProcessRepository interface{}
 type EquipmentRepository interface{}
 type AssignmentRuleRepository interface{}
@@ -13,7 +13,7 @@ type ComplianceRepository interface{}
 // Placeholder constructors
 func NewCompanyRepository(db interface{}) CompanyRepository { return nil }
 func NewCustomerRepository(db interface{}) CustomerRepository { return nil }
-func NewInquiryRepository(db interface{}) InquiryRepository { return nil }
+// NewInquiryRepository is defined in inquiry_repository.go
 func NewProcessRepository(db interface{}) ProcessRepository { return nil }
 func NewEquipmentRepository(db interface{}) EquipmentRepository { return nil }
 func NewAssignmentRuleRepository(db interface{}) AssignmentRuleRepository { return nil }

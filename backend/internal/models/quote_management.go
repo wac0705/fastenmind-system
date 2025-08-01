@@ -14,9 +14,24 @@ type QuoteVersion struct {
 	Quote         *Quote       `json:"quote" gorm:"foreignKey:QuoteID"`
 	VersionNumber int          `json:"version_number" gorm:"not null"`
 	VersionNotes  string       `json:"version_notes" gorm:"type:text"`
+	ChangeSummary string       `json:"change_summary" gorm:"type:text"`
 	IsCurrent     bool         `json:"is_current" gorm:"default:false"`
 	Items         []QuoteItem  `json:"items" gorm:"foreignKey:QuoteVersionID"`
 	Terms         []QuoteTerm  `json:"terms" gorm:"foreignKey:QuoteVersionID"`
+	
+	// Cost fields (for compatibility with service)
+	MaterialCost   float64      `json:"material_cost"`
+	ProcessCost    float64      `json:"process_cost"`
+	SurfaceCost    float64      `json:"surface_cost"`
+	HeatTreatCost  float64      `json:"heat_treat_cost"`
+	PackagingCost  float64      `json:"packaging_cost"`
+	ShippingCost   float64      `json:"shipping_cost"`
+	TariffCost     float64      `json:"tariff_cost"`
+	OverheadRate   float64      `json:"overhead_rate"`
+	ProfitRate     float64      `json:"profit_rate"`
+	TotalCost      float64      `json:"total_cost"`
+	UnitPrice      float64      `json:"unit_price"`
+	
 	CreatedBy     uuid.UUID    `json:"created_by" gorm:"type:uuid;not null"`
 	Creator       Account      `json:"creator" gorm:"foreignKey:CreatedBy"`
 	CreatedAt     time.Time    `json:"created_at" gorm:"autoCreateTime"`

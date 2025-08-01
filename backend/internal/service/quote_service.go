@@ -141,6 +141,12 @@ func (s *quoteService) Create(companyID, userID uuid.UUID, req CreateQuoteReques
 	totalCost := subtotalWithOverhead + profitAmount
 	unitPrice := totalCost / float64(inquiry.Quantity)
 	
+	// Parse ValidUntil date
+	validUntil, err := time.Parse("2006-01-02", req.ValidUntil)
+	if err != nil {
+		return nil, errors.New("invalid date format for valid_until, expected YYYY-MM-DD")
+	}
+	
 	// Create quote
 	quote := &models.Quote{
 		CompanyID:      companyID,
@@ -161,7 +167,7 @@ func (s *quoteService) Create(companyID, userID uuid.UUID, req CreateQuoteReques
 		TotalCost:      totalCost,
 		UnitPrice:      unitPrice,
 		Currency:       req.Currency,
-		ValidUntil:     req.ValidUntil,
+		ValidUntil:     validUntil,
 		DeliveryDays:   req.DeliveryDays,
 		PaymentTerms:   req.PaymentTerms,
 		Notes:          req.Notes,
@@ -345,7 +351,7 @@ func (s *quoteService) Send(id, userID uuid.UUID, req SendQuoteRequest) (*models
 	}
 	
 	// Generate PDF
-	pdfData, _, err := s.GeneratePDF(id)
+	_, _, err = s.GeneratePDF(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate PDF: %w", err)
 	}
