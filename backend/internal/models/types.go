@@ -17,10 +17,11 @@ type Product = model.Product
 
 // Additional types that might be in models package
 type QuoteActivity struct {
-	ID        uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	QuoteID   uuid.UUID `json:"quote_id" gorm:"type:uuid;not null"`
-	UserID    uuid.UUID `json:"user_id" gorm:"type:uuid;not null"`
-	Action    string    `json:"action" gorm:"not null"`
-	Details   string    `json:"details"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	ID          uuid.UUID `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	QuoteID     uuid.UUID `json:"quote_id" gorm:"type:uuid;not null"`
+	UserID      uuid.UUID `json:"user_id" gorm:"type:uuid;not null"`
+	Action      string    `json:"action" gorm:"not null"`
+	Details     string    `json:"details"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
 }

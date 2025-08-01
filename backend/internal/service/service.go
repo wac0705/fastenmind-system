@@ -46,8 +46,8 @@ func NewServices(repos *repository.Repositories, cfg *config.Config) *Services {
 		Quote:          NewQuoteService(repos.Quote, repos.Inquiry, repos.Customer, n8nService, pdfGenerator),
 		Order:          NewOrderService(repos.Order, repos.Quote, repos.Customer, n8nService),
 		Inventory:      NewInventoryService(repos.Inventory, repos.Order, n8nService),
-		Trade:          NewTradeService(repos.Trade, repos.Account),
-		Advanced:       NewAdvancedService(repos.Advanced, repos.Account),
-		Integration:    NewIntegrationService(repos.Integration, repos.Account),
+		Trade:          NewTradeService(),
+		Advanced:       NewAdvancedService(),
+		Integration:    NewIntegrationService(),
 	}
 }

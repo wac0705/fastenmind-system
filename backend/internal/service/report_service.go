@@ -871,7 +871,7 @@ func (s *reportService) DeleteReportTemplate(id uuid.UUID) error {
 
 // Report Execution operations
 func (s *reportService) ExecuteReport(reportID uuid.UUID, params map[string]interface{}, userID uuid.UUID) (*models.ReportExecution, error) {
-	report, err := s.reportRepo.GetReport(reportID)
+	_, err := s.reportRepo.GetReport(reportID)
 	if err != nil {
 		return nil, fmt.Errorf("report not found: %w", err)
 	}
@@ -1021,8 +1021,8 @@ func (s *reportService) GetReportDashboardData(companyID uuid.UUID) (*ReportDash
 
 	// Get scheduled reports
 	if scheduledReports, err := s.reportRepo.GetScheduledReports(companyID); err == nil {
-		dashboard.ScheduledReports = scheduledReports
-		dashboard.ScheduledReports = len(scheduledReports)
+		dashboard.ScheduledReportsList = scheduledReports
+		dashboard.ScheduledReportsCount = len(scheduledReports)
 	}
 
 	// System health simulation
