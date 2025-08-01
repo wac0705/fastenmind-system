@@ -93,14 +93,14 @@ func (h *MobileHandler) ListUserDevices(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list user devices")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "User devices retrieved successfully", map[string]interface{}{
 		"data":  devices,
 		"total": len(devices),
-	}, "User devices retrieved successfully")
+	})
 }
 
 func (h *MobileHandler) ListCompanyDevices(c echo.Context) error {
-	companyID := *getCompanyIDFromContext(c)
+	companyID := getCompanyIDFromContext(c)
 	params := getMobileListParams(c)
 
 	devices, total, err := h.mobileService.ListCompanyDevices(c.Request().Context(), companyID, params)
@@ -108,10 +108,10 @@ func (h *MobileHandler) ListCompanyDevices(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list company devices")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Company devices retrieved successfully", map[string]interface{}{
 		"data":  devices,
 		"total": total,
-	}, "Company devices retrieved successfully")
+	})
 }
 
 func (h *MobileHandler) DeactivateDevice(c echo.Context) error {
@@ -163,26 +163,25 @@ func (h *MobileHandler) SendBulkPushNotifications(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to send bulk push notifications")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Bulk push notifications sent successfully", map[string]interface{}{
 		"count": len(req.Notifications),
-	}, "Bulk push notifications sent successfully")
+	})
 }
 
 func (h *MobileHandler) ListPushNotifications(c echo.Context) error {
 	params := getMobileListParams(c)
-	if companyID := getCompanyIDFromContext(c); companyID != nil {
-		params["company_id"] = *companyID
-	}
+	companyID := getCompanyIDFromContext(c)
+	params["company_id"] = companyID
 
 	notifications, total, err := h.mobileService.ListPushNotifications(c.Request().Context(), params)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list push notifications")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Push notifications retrieved successfully", map[string]interface{}{
 		"data":  notifications,
 		"total": total,
-	}, "Push notifications retrieved successfully")
+	})
 }
 
 func (h *MobileHandler) ListDeviceNotifications(c echo.Context) error {
@@ -198,10 +197,10 @@ func (h *MobileHandler) ListDeviceNotifications(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list device notifications")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Device notifications retrieved successfully", map[string]interface{}{
 		"data":  notifications,
 		"total": total,
-	}, "Device notifications retrieved successfully")
+	})
 }
 
 func (h *MobileHandler) MarkNotificationDelivered(c echo.Context) error {
@@ -246,9 +245,9 @@ func (h *MobileHandler) SendNotificationToUsers(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to send notifications to users")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Notifications sent to users successfully", map[string]interface{}{
 		"user_count": len(req.UserIDs),
-	}, "Notifications sent to users successfully")
+	})
 }
 
 func (h *MobileHandler) ProcessPendingNotifications(c echo.Context) error {
@@ -328,10 +327,10 @@ func (h *MobileHandler) ValidateSession(c echo.Context) error {
 		return response.Error(c, http.StatusUnauthorized, "Invalid session")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Session validated successfully", map[string]interface{}{
 		"valid":   true,
 		"session": session,
-	}, "Session validated successfully")
+	})
 }
 
 // Analytics endpoints
@@ -387,7 +386,7 @@ func (h *MobileHandler) TrackUserInteraction(c echo.Context) error {
 }
 
 func (h *MobileHandler) GetAnalyticsSummary(c echo.Context) error {
-	companyID := *getCompanyIDFromContext(c)
+	companyID := getCompanyIDFromContext(c)
 
 	startDateStr := c.QueryParam("start_date")
 	endDateStr := c.QueryParam("end_date")
@@ -483,10 +482,10 @@ func (h *MobileHandler) CheckForUpdates(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to check for updates")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Update check completed successfully", map[string]interface{}{
 		"has_update":     hasUpdate,
 		"latest_version": latestVersion,
-	}, "Update check completed successfully")
+	})
 }
 
 // Offline Data Sync endpoints
@@ -543,10 +542,10 @@ func (h *MobileHandler) ListPendingOfflineData(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "Failed to list pending offline data")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Pending offline data retrieved successfully", map[string]interface{}{
 		"data":  data,
 		"total": len(data),
-	}, "Pending offline data retrieved successfully")
+	})
 }
 
 // Configuration Management endpoints
@@ -563,10 +562,10 @@ func (h *MobileHandler) GetMobileConfig(c echo.Context) error {
 		return response.Error(c, http.StatusNotFound, "Configuration not found")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.SuccessWithMessage(c, "Mobile configuration retrieved successfully", map[string]interface{}{
 		"key":   key,
 		"value": value,
-	}, "Mobile configuration retrieved successfully")
+	})
 }
 
 func (h *MobileHandler) GetMobileConfigs(c echo.Context) error {
@@ -633,7 +632,7 @@ func (h *MobileHandler) GetDeviceUsageStats(c echo.Context) error {
 }
 
 func (h *MobileHandler) GetNotificationStats(c echo.Context) error {
-	companyID := *getCompanyIDFromContext(c)
+	companyID := getCompanyIDFromContext(c)
 
 	days := 30
 	if daysStr := c.QueryParam("days"); daysStr != "" {
@@ -651,7 +650,7 @@ func (h *MobileHandler) GetNotificationStats(c echo.Context) error {
 }
 
 func (h *MobileHandler) GenerateMobileDashboard(c echo.Context) error {
-	companyID := *getCompanyIDFromContext(c)
+	companyID := getCompanyIDFromContext(c)
 
 	dashboard, err := h.mobileService.GenerateMobileDashboard(c.Request().Context(), companyID)
 	if err != nil {
