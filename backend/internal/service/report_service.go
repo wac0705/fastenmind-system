@@ -1,10 +1,8 @@
 package service
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/fastenmind/fastener-api/internal/models"

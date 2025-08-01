@@ -155,7 +155,6 @@ func (s *tariffService) CalculateTariff(req TariffCalculationRequest) (*TariffCa
 	if req.PreferentialTreatment && rate.AgreementType != "" {
 		// Apply preferential rate based on agreement type
 		if rate.AgreementType == "fta" || rate.AgreementType == "gsp" {
-			originalRate := effectiveRate
 			effectiveRate = effectiveRate * 0.5 // 50% reduction for FTA/GSP
 			details.PreferentialApplied = true
 			
@@ -184,9 +183,9 @@ func (s *tariffService) CalculateTariff(req TariffCalculationRequest) (*TariffCa
 	case "compound":
 		// Both ad valorem and specific
 		details.AdValoremDuty = req.ProductValue * (effectiveRate / 100)
-		if req.Quantity > 0 && rate.SpecificRate > 0 {
-			// For specific duty, use the rate as a fixed amount per unit
-		details.SpecificDuty = rate.Rate * req.Quantity
+		if req.Quantity > 0 {
+			// For compound duty, add specific duty component
+			details.SpecificDuty = effectiveRate * req.Quantity
 		}
 		details.TotalDuty = details.AdValoremDuty + details.SpecificDuty
 		
@@ -195,8 +194,10 @@ func (s *tariffService) CalculateTariff(req TariffCalculationRequest) (*TariffCa
 	}
 	
 	// Calculate preferential savings if applied
-	if details.PreferentialApplied && rate.RateValue != rate.PreferentialRate {
-		normalDuty := req.ProductValue * (rate.RateValue / 100)
+	if details.PreferentialApplied {
+		// Calculate what the duty would have been without preferential treatment
+		normalRate := rate.Rate
+		normalDuty := req.ProductValue * (normalRate / 100)
 		details.PreferentialSavings = normalDuty - details.TotalDuty
 		if details.PreferentialSavings < 0 {
 			details.PreferentialSavings = 0

@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/fastenmind/fastener-api/internal/models"
