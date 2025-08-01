@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+	
 	"github.com/fastenmind/fastener-api/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
