@@ -10,3 +10,4 @@ type Account = model.Account
 type Company = model.Company
 type Customer = model.Customer
 type Inquiry = model.Inquiry
+type Product = model.Product
