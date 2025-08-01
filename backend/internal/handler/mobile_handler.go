@@ -26,47 +26,47 @@ func NewMobileHandler(mobileService service.MobileService) *MobileHandler {
 func (h *MobileHandler) RegisterDevice(c echo.Context) error {
 	var device models.MobileDevice
 	if err := c.Bind(&device); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.RegisterDevice(c.Request().Context(), &device); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to register device", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to register device")
 	}
 
-	return response.Success(c, device, "Device registered successfully")
+	return response.SuccessWithMessage(c, "Device registered successfully", device)
 }
 
 func (h *MobileHandler) UpdateDevice(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	var device models.MobileDevice
 	if err := c.Bind(&device); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	device.ID = id
 	if err := h.mobileService.UpdateDevice(c.Request().Context(), &device); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to update device", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to update device")
 	}
 
-	return response.Success(c, device, "Device updated successfully")
+	return response.SuccessWithMessage(c, "Device updated successfully", device)
 }
 
 func (h *MobileHandler) GetDevice(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	device, err := h.mobileService.GetDevice(c.Request().Context(), id)
 	if err != nil {
-		return response.Error(c, http.StatusNotFound, "Device not found", err)
+		return response.Error(c, http.StatusNotFound, "Device not found")
 	}
 
-	return response.Success(c, device, "Device retrieved successfully")
+	return response.SuccessWithMessage(c, "Device retrieved successfully", device)
 }
 
 func (h *MobileHandler) GetDeviceByToken(c echo.Context) error {
@@ -74,23 +74,23 @@ func (h *MobileHandler) GetDeviceByToken(c echo.Context) error {
 
 	device, err := h.mobileService.GetDeviceByToken(c.Request().Context(), deviceToken)
 	if err != nil {
-		return response.Error(c, http.StatusNotFound, "Device not found", err)
+		return response.Error(c, http.StatusNotFound, "Device not found")
 	}
 
-	return response.Success(c, device, "Device retrieved successfully")
+	return response.SuccessWithMessage(c, "Device retrieved successfully", device)
 }
 
 func (h *MobileHandler) ListUserDevices(c echo.Context) error {
 	userIDStr := c.Param("userId")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid user ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid user ID")
 	}
 
 	params := getMobileListParams(c)
 	devices, err := h.mobileService.ListUserDevices(c.Request().Context(), userID, params)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to list user devices", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to list user devices")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -105,7 +105,7 @@ func (h *MobileHandler) ListCompanyDevices(c echo.Context) error {
 
 	devices, total, err := h.mobileService.ListCompanyDevices(c.Request().Context(), companyID, params)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to list company devices", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to list company devices")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -117,38 +117,38 @@ func (h *MobileHandler) ListCompanyDevices(c echo.Context) error {
 func (h *MobileHandler) DeactivateDevice(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	if err := h.mobileService.DeactivateDevice(c.Request().Context(), id); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to deactivate device", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to deactivate device")
 	}
 
-	return response.Success(c, nil, "Device deactivated successfully")
+	return response.SuccessWithMessage(c, "Device deactivated successfully", nil)
 }
 
 func (h *MobileHandler) UpdateDeviceLastSeen(c echo.Context) error {
 	deviceToken := c.Param("token")
 
 	if err := h.mobileService.UpdateDeviceLastSeen(c.Request().Context(), deviceToken); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to update device last seen", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to update device last seen")
 	}
 
-	return response.Success(c, nil, "Device last seen updated successfully")
+	return response.SuccessWithMessage(c, "Device last seen updated successfully", nil)
 }
 
 // Push Notification endpoints
 func (h *MobileHandler) SendPushNotification(c echo.Context) error {
 	var notification models.PushNotification
 	if err := c.Bind(&notification); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.SendPushNotification(c.Request().Context(), &notification); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to send push notification", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to send push notification")
 	}
 
-	return response.Success(c, notification, "Push notification sent successfully")
+	return response.SuccessWithMessage(c, "Push notification sent successfully", notification)
 }
 
 func (h *MobileHandler) SendBulkPushNotifications(c echo.Context) error {
@@ -156,11 +156,11 @@ func (h *MobileHandler) SendBulkPushNotifications(c echo.Context) error {
 		Notifications []models.PushNotification `json:"notifications"`
 	}
 	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.SendBulkPushNotifications(c.Request().Context(), req.Notifications); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to send bulk push notifications", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to send bulk push notifications")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -176,7 +176,7 @@ func (h *MobileHandler) ListPushNotifications(c echo.Context) error {
 
 	notifications, total, err := h.mobileService.ListPushNotifications(c.Request().Context(), params)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to list push notifications", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to list push notifications")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -189,13 +189,13 @@ func (h *MobileHandler) ListDeviceNotifications(c echo.Context) error {
 	deviceIDStr := c.Param("deviceId")
 	deviceID, err := uuid.Parse(deviceIDStr)
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	params := getMobileListParams(c)
 	notifications, total, err := h.mobileService.ListDeviceNotifications(c.Request().Context(), deviceID, params)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to list device notifications", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to list device notifications")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -207,27 +207,27 @@ func (h *MobileHandler) ListDeviceNotifications(c echo.Context) error {
 func (h *MobileHandler) MarkNotificationDelivered(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid notification ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid notification ID")
 	}
 
 	if err := h.mobileService.MarkNotificationDelivered(c.Request().Context(), id); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to mark notification as delivered", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to mark notification as delivered")
 	}
 
-	return response.Success(c, nil, "Notification marked as delivered successfully")
+	return response.SuccessWithMessage(c, "Notification marked as delivered successfully", nil)
 }
 
 func (h *MobileHandler) MarkNotificationClicked(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid notification ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid notification ID")
 	}
 
 	if err := h.mobileService.MarkNotificationClicked(c.Request().Context(), id); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to mark notification as clicked", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to mark notification as clicked")
 	}
 
-	return response.Success(c, nil, "Notification marked as clicked successfully")
+	return response.SuccessWithMessage(c, "Notification marked as clicked successfully", nil)
 }
 
 func (h *MobileHandler) SendNotificationToUsers(c echo.Context) error {
@@ -239,11 +239,11 @@ func (h *MobileHandler) SendNotificationToUsers(c echo.Context) error {
 		Data    map[string]interface{} `json:"data"`
 	}
 	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.SendNotificationToUsers(c.Request().Context(), req.UserIDs, req.Title, req.Body, req.Type, req.Data); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to send notifications to users", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to send notifications to users")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -260,10 +260,10 @@ func (h *MobileHandler) ProcessPendingNotifications(c echo.Context) error {
 	}
 
 	if err := h.mobileService.ProcessPendingNotifications(c.Request().Context(), limit); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to process pending notifications", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to process pending notifications")
 	}
 
-	return response.Success(c, nil, "Pending notifications processed successfully")
+	return response.SuccessWithMessage(c, "Pending notifications processed successfully", nil)
 }
 
 // Session Management endpoints
@@ -273,15 +273,15 @@ func (h *MobileHandler) CreateMobileSession(c echo.Context) error {
 		UserID      uuid.UUID `json:"user_id"`
 	}
 	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	session, err := h.mobileService.CreateMobileSession(c.Request().Context(), req.DeviceToken, req.UserID)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to create mobile session", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to create mobile session")
 	}
 
-	return response.Success(c, session, "Mobile session created successfully")
+	return response.SuccessWithMessage(c, "Mobile session created successfully", session)
 }
 
 func (h *MobileHandler) UpdateMobileSession(c echo.Context) error {
@@ -289,14 +289,14 @@ func (h *MobileHandler) UpdateMobileSession(c echo.Context) error {
 
 	var updates map[string]interface{}
 	if err := c.Bind(&updates); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.UpdateMobileSession(c.Request().Context(), sessionToken, updates); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to update mobile session", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to update mobile session")
 	}
 
-	return response.Success(c, nil, "Mobile session updated successfully")
+	return response.SuccessWithMessage(c, "Mobile session updated successfully", nil)
 }
 
 func (h *MobileHandler) GetMobileSession(c echo.Context) error {
@@ -304,20 +304,20 @@ func (h *MobileHandler) GetMobileSession(c echo.Context) error {
 
 	session, err := h.mobileService.GetMobileSession(c.Request().Context(), sessionToken)
 	if err != nil {
-		return response.Error(c, http.StatusNotFound, "Mobile session not found", err)
+		return response.Error(c, http.StatusNotFound, "Mobile session not found")
 	}
 
-	return response.Success(c, session, "Mobile session retrieved successfully")
+	return response.SuccessWithMessage(c, "Mobile session retrieved successfully", session)
 }
 
 func (h *MobileHandler) EndMobileSession(c echo.Context) error {
 	sessionToken := c.Param("token")
 
 	if err := h.mobileService.EndMobileSession(c.Request().Context(), sessionToken); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to end mobile session", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to end mobile session")
 	}
 
-	return response.Success(c, nil, "Mobile session ended successfully")
+	return response.SuccessWithMessage(c, "Mobile session ended successfully", nil)
 }
 
 func (h *MobileHandler) ValidateSession(c echo.Context) error {
@@ -325,7 +325,7 @@ func (h *MobileHandler) ValidateSession(c echo.Context) error {
 
 	session, err := h.mobileService.ValidateSession(c.Request().Context(), sessionToken)
 	if err != nil {
-		return response.Error(c, http.StatusUnauthorized, "Invalid session", err)
+		return response.Error(c, http.StatusUnauthorized, "Invalid session")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -338,14 +338,14 @@ func (h *MobileHandler) ValidateSession(c echo.Context) error {
 func (h *MobileHandler) TrackEvent(c echo.Context) error {
 	var event models.MobileAnalytics
 	if err := c.Bind(&event); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.TrackEvent(c.Request().Context(), &event); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to track event", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to track event")
 	}
 
-	return response.Success(c, nil, "Event tracked successfully")
+	return response.SuccessWithMessage(c, "Event tracked successfully", nil)
 }
 
 func (h *MobileHandler) TrackScreenView(c echo.Context) error {
@@ -357,14 +357,14 @@ func (h *MobileHandler) TrackScreenView(c echo.Context) error {
 		Duration    int64     `json:"duration"`
 	}
 	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.TrackScreenView(c.Request().Context(), req.DeviceID, req.UserID, req.ScreenName, req.ScreenClass, req.Duration); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to track screen view", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to track screen view")
 	}
 
-	return response.Success(c, nil, "Screen view tracked successfully")
+	return response.SuccessWithMessage(c, "Screen view tracked successfully", nil)
 }
 
 func (h *MobileHandler) TrackUserInteraction(c echo.Context) error {
@@ -376,14 +376,14 @@ func (h *MobileHandler) TrackUserInteraction(c echo.Context) error {
 		Data            map[string]interface{} `json:"data"`
 	}
 	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.TrackUserInteraction(c.Request().Context(), req.DeviceID, req.UserID, req.InteractionType, req.ElementID, req.Data); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to track user interaction", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to track user interaction")
 	}
 
-	return response.Success(c, nil, "User interaction tracked successfully")
+	return response.SuccessWithMessage(c, "User interaction tracked successfully", nil)
 }
 
 func (h *MobileHandler) GetAnalyticsSummary(c echo.Context) error {
@@ -398,7 +398,7 @@ func (h *MobileHandler) GetAnalyticsSummary(c echo.Context) error {
 	if startDateStr != "" {
 		startDate, err = time.Parse("2006-01-02", startDateStr)
 		if err != nil {
-			return response.Error(c, http.StatusBadRequest, "Invalid start date format", err)
+			return response.Error(c, http.StatusBadRequest, "Invalid start date format")
 		}
 	} else {
 		startDate = time.Now().AddDate(0, 0, -30) // Last 30 days
@@ -407,7 +407,7 @@ func (h *MobileHandler) GetAnalyticsSummary(c echo.Context) error {
 	if endDateStr != "" {
 		endDate, err = time.Parse("2006-01-02", endDateStr)
 		if err != nil {
-			return response.Error(c, http.StatusBadRequest, "Invalid end date format", err)
+			return response.Error(c, http.StatusBadRequest, "Invalid end date format")
 		}
 	} else {
 		endDate = time.Now()
@@ -415,59 +415,59 @@ func (h *MobileHandler) GetAnalyticsSummary(c echo.Context) error {
 
 	summary, err := h.mobileService.GetAnalyticsSummary(c.Request().Context(), companyID, startDate, endDate)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to get analytics summary", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to get analytics summary")
 	}
 
-	return response.Success(c, summary, "Analytics summary retrieved successfully")
+	return response.SuccessWithMessage(c, "Analytics summary retrieved successfully", summary)
 }
 
 // App Version Management endpoints
 func (h *MobileHandler) CreateAppVersion(c echo.Context) error {
 	var version models.MobileAppVersion
 	if err := c.Bind(&version); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	userID := getUserIDFromContext(c)
 	if err := h.mobileService.CreateAppVersion(c.Request().Context(), &version, userID); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to create app version", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to create app version")
 	}
 
-	return response.Success(c, version, "App version created successfully")
+	return response.SuccessWithMessage(c, "App version created successfully", version)
 }
 
 func (h *MobileHandler) UpdateAppVersion(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid version ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid version ID")
 	}
 
 	var version models.MobileAppVersion
 	if err := c.Bind(&version); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	version.ID = id
 	if err := h.mobileService.UpdateAppVersion(c.Request().Context(), &version); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to update app version", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to update app version")
 	}
 
-	return response.Success(c, version, "App version updated successfully")
+	return response.SuccessWithMessage(c, "App version updated successfully", version)
 }
 
 func (h *MobileHandler) GetLatestAppVersion(c echo.Context) error {
 	platform := c.QueryParam("platform")
 	if platform == "" {
-		return response.Error(c, http.StatusBadRequest, "Platform parameter is required", nil)
+		return response.Error(c, http.StatusBadRequest, "Platform parameter is required")
 	}
 
 	companyID := getCompanyIDFromContext(c)
 	version, err := h.mobileService.GetLatestAppVersion(c.Request().Context(), platform, companyID)
 	if err != nil {
-		return response.Error(c, http.StatusNotFound, "No app version found", err)
+		return response.Error(c, http.StatusNotFound, "No app version found")
 	}
 
-	return response.Success(c, version, "Latest app version retrieved successfully")
+	return response.SuccessWithMessage(c, "Latest app version retrieved successfully", version)
 }
 
 func (h *MobileHandler) CheckForUpdates(c echo.Context) error {
@@ -475,12 +475,12 @@ func (h *MobileHandler) CheckForUpdates(c echo.Context) error {
 	currentVersion := c.QueryParam("current_version")
 
 	if deviceToken == "" || currentVersion == "" {
-		return response.Error(c, http.StatusBadRequest, "Device token and current version are required", nil)
+		return response.Error(c, http.StatusBadRequest, "Device token and current version are required")
 	}
 
 	latestVersion, hasUpdate, err := h.mobileService.CheckForUpdates(c.Request().Context(), deviceToken, currentVersion)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to check for updates", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to check for updates")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -493,21 +493,21 @@ func (h *MobileHandler) CheckForUpdates(c echo.Context) error {
 func (h *MobileHandler) CreateOfflineData(c echo.Context) error {
 	var data models.MobileOfflineData
 	if err := c.Bind(&data); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	if err := h.mobileService.CreateOfflineData(c.Request().Context(), &data); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to create offline data", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to create offline data")
 	}
 
-	return response.Success(c, data, "Offline data created successfully")
+	return response.SuccessWithMessage(c, "Offline data created successfully", data)
 }
 
 func (h *MobileHandler) SyncOfflineData(c echo.Context) error {
 	deviceIDStr := c.Param("deviceId")
 	deviceID, err := uuid.Parse(deviceIDStr)
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	limit := 10
@@ -518,17 +518,17 @@ func (h *MobileHandler) SyncOfflineData(c echo.Context) error {
 	}
 
 	if err := h.mobileService.SyncOfflineData(c.Request().Context(), deviceID, limit); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to sync offline data", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to sync offline data")
 	}
 
-	return response.Success(c, nil, "Offline data synced successfully")
+	return response.SuccessWithMessage(c, "Offline data synced successfully", nil)
 }
 
 func (h *MobileHandler) ListPendingOfflineData(c echo.Context) error {
 	deviceIDStr := c.Param("deviceId")
 	deviceID, err := uuid.Parse(deviceIDStr)
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	limit := 50
@@ -540,7 +540,7 @@ func (h *MobileHandler) ListPendingOfflineData(c echo.Context) error {
 
 	data, err := h.mobileService.ListPendingOfflineData(c.Request().Context(), deviceID, limit)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to list pending offline data", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to list pending offline data")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -554,13 +554,13 @@ func (h *MobileHandler) GetMobileConfig(c echo.Context) error {
 	key := c.Param("key")
 	platform := c.QueryParam("platform")
 	if platform == "" {
-		return response.Error(c, http.StatusBadRequest, "Platform parameter is required", nil)
+		return response.Error(c, http.StatusBadRequest, "Platform parameter is required")
 	}
 
 	companyID := getCompanyIDFromContext(c)
 	value, err := h.mobileService.GetMobileConfig(c.Request().Context(), key, platform, companyID)
 	if err != nil {
-		return response.Error(c, http.StatusNotFound, "Configuration not found", err)
+		return response.Error(c, http.StatusNotFound, "Configuration not found")
 	}
 
 	return response.Success(c, map[string]interface{}{
@@ -572,30 +572,30 @@ func (h *MobileHandler) GetMobileConfig(c echo.Context) error {
 func (h *MobileHandler) GetMobileConfigs(c echo.Context) error {
 	platform := c.QueryParam("platform")
 	if platform == "" {
-		return response.Error(c, http.StatusBadRequest, "Platform parameter is required", nil)
+		return response.Error(c, http.StatusBadRequest, "Platform parameter is required")
 	}
 
 	companyID := getCompanyIDFromContext(c)
 	configs, err := h.mobileService.GetMobileConfigs(c.Request().Context(), platform, companyID)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile configurations", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile configurations")
 	}
 
-	return response.Success(c, configs, "Mobile configurations retrieved successfully")
+	return response.SuccessWithMessage(c, "Mobile configurations retrieved successfully", configs)
 }
 
 func (h *MobileHandler) SetMobileConfig(c echo.Context) error {
 	var config models.MobileConfiguration
 	if err := c.Bind(&config); err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid request body")
 	}
 
 	userID := getUserIDFromContext(c)
 	if err := h.mobileService.SetMobileConfig(c.Request().Context(), &config, userID); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to set mobile configuration", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to set mobile configuration")
 	}
 
-	return response.Success(c, config, "Mobile configuration set successfully")
+	return response.SuccessWithMessage(c, "Mobile configuration set successfully", config)
 }
 
 // Business Operations endpoints
@@ -604,17 +604,17 @@ func (h *MobileHandler) GetMobileStatistics(c echo.Context) error {
 
 	stats, err := h.mobileService.GetMobileStatistics(c.Request().Context(), companyID)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile statistics", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile statistics")
 	}
 
-	return response.Success(c, stats, "Mobile statistics retrieved successfully")
+	return response.SuccessWithMessage(c, "Mobile statistics retrieved successfully", stats)
 }
 
 func (h *MobileHandler) GetDeviceUsageStats(c echo.Context) error {
 	deviceIDStr := c.Param("deviceId")
 	deviceID, err := uuid.Parse(deviceIDStr)
 	if err != nil {
-		return response.Error(c, http.StatusBadRequest, "Invalid device ID", err)
+		return response.Error(c, http.StatusBadRequest, "Invalid device ID")
 	}
 
 	days := 30
@@ -626,10 +626,10 @@ func (h *MobileHandler) GetDeviceUsageStats(c echo.Context) error {
 
 	stats, err := h.mobileService.GetDeviceUsageStats(c.Request().Context(), deviceID, days)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to get device usage stats", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to get device usage stats")
 	}
 
-	return response.Success(c, stats, "Device usage statistics retrieved successfully")
+	return response.SuccessWithMessage(c, "Device usage statistics retrieved successfully", stats)
 }
 
 func (h *MobileHandler) GetNotificationStats(c echo.Context) error {
@@ -644,10 +644,10 @@ func (h *MobileHandler) GetNotificationStats(c echo.Context) error {
 
 	stats, err := h.mobileService.GetNotificationStats(c.Request().Context(), companyID, days)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to get notification stats", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to get notification stats")
 	}
 
-	return response.Success(c, stats, "Notification statistics retrieved successfully")
+	return response.SuccessWithMessage(c, "Notification statistics retrieved successfully", stats)
 }
 
 func (h *MobileHandler) GenerateMobileDashboard(c echo.Context) error {
@@ -655,10 +655,10 @@ func (h *MobileHandler) GenerateMobileDashboard(c echo.Context) error {
 
 	dashboard, err := h.mobileService.GenerateMobileDashboard(c.Request().Context(), companyID)
 	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "Failed to generate mobile dashboard", err)
+		return response.Error(c, http.StatusInternalServerError, "Failed to generate mobile dashboard")
 	}
 
-	return response.Success(c, dashboard, "Mobile dashboard generated successfully")
+	return response.SuccessWithMessage(c, "Mobile dashboard generated successfully", dashboard)
 }
 
 // Helper functions
