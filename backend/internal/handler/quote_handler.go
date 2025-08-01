@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -58,9 +57,10 @@ func (h *QuoteHandler) List(c echo.Context) error {
 		params["search"] = search
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quotes, total, err := h.service.List(userClaims.CompanyID, params)
+	quotes, total, err := h.service.List(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -113,9 +113,10 @@ func (h *QuoteHandler) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.Create(userClaims.CompanyID, userClaims.UserID, req)
+	quote, err := h.service.Create(companyID, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -144,9 +145,10 @@ func (h *QuoteHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.Update(id, userClaims.UserID, req)
+	quote, err := h.service.Update(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -191,9 +193,10 @@ func (h *QuoteHandler) SubmitForReview(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quote ID")
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.SubmitForReview(id, userClaims.UserID)
+	quote, err := h.service.SubmitForReview(id, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -222,9 +225,10 @@ func (h *QuoteHandler) Review(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.Review(id, userClaims.UserID, req)
+	quote, err := h.service.Review(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -253,9 +257,10 @@ func (h *QuoteHandler) Send(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.Send(id, userClaims.UserID, req)
+	quote, err := h.service.Send(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -350,9 +355,10 @@ func (h *QuoteHandler) Duplicate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quote ID")
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	quote, err := h.service.Duplicate(id, userClaims.UserID)
+	quote, err := h.service.Duplicate(id, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

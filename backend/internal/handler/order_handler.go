@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -70,9 +69,10 @@ func (h *OrderHandler) List(c echo.Context) error {
 		params["end_date"] = endDate
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	orders, total, err := h.service.List(userClaims.CompanyID, params)
+	orders, total, err := h.service.List(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -125,9 +125,10 @@ func (h *OrderHandler) CreateFromQuote(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	order, err := h.service.CreateFromQuote(userClaims.CompanyID, userClaims.UserID, req.QuoteID, req)
+	order, err := h.service.CreateFromQuote(companyID, userID, req.QuoteID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -156,9 +157,10 @@ func (h *OrderHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	order, err := h.service.Update(id, userClaims.UserID, req)
+	order, err := h.service.Update(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -190,9 +192,10 @@ func (h *OrderHandler) UpdateStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	order, err := h.service.UpdateStatus(id, userClaims.UserID, req.Status, req.Notes)
+	order, err := h.service.UpdateStatus(id, userID, req.Status, req.Notes)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -317,9 +320,10 @@ func (h *OrderHandler) AddDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	doc, err := h.service.AddDocument(id, userClaims.UserID, req)
+	doc, err := h.service.AddDocument(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -382,12 +386,13 @@ func (h *OrderHandler) GetActivities(c echo.Context) error {
 // @Success 200 {object} service.OrderStats
 // @Router /api/orders/stats [get]
 func (h *OrderHandler) GetStats(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
 	params := make(map[string]interface{})
 	// Add any filter params from query string if needed
 	
-	stats, err := h.service.GetOrderStats(userClaims.CompanyID, params)
+	stats, err := h.service.GetOrderStats(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
