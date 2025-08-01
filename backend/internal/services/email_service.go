@@ -21,6 +21,16 @@ func NewEmailService(smtpHost string, smtpPort int, username, password string) *
 	}
 }
 
+// NewEmailServiceDefault creates an email service with default configuration
+func NewEmailServiceDefault() *EmailService {
+	return &EmailService{
+		smtpHost: "localhost",
+		smtpPort: 25,
+		username: "",
+		password: "",
+	}
+}
+
 func (s *EmailService) SendEmail(to []string, subject string, body string) error {
 	// Implement email sending logic
 	fmt.Printf("Sending email to %v with subject: %s\n", to, subject)

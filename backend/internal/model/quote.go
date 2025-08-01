@@ -28,9 +28,15 @@ type Quote struct {
 	UnitPrice        float64    `json:"unit_price" db:"unit_price"`
 	Currency         string     `json:"currency" db:"currency"`
 	ValidUntil       time.Time  `json:"valid_until" db:"valid_until"`
+	ValidityDays     int        `json:"validity_days" db:"validity_days"`
 	DeliveryDays     int        `json:"delivery_days" db:"delivery_days"`
+	DeliveryTerms    string     `json:"delivery_terms" db:"delivery_terms"`
 	PaymentTerms     string     `json:"payment_terms" db:"payment_terms"`
+	Remarks          *string    `json:"remarks,omitempty" db:"remarks"`
 	Notes            *string    `json:"notes,omitempty" db:"notes"`
+	CreatedBy        uuid.UUID  `json:"created_by" db:"created_by"`
+	TemplateID       *uuid.UUID `json:"template_id,omitempty" db:"template_id"`
+	CurrentVersionID *uuid.UUID `json:"current_version_id,omitempty" db:"current_version_id"`
 	ReviewedBy       *uuid.UUID `json:"reviewed_by,omitempty" db:"reviewed_by"`
 	ReviewedAt       *time.Time `json:"reviewed_at,omitempty" db:"reviewed_at"`
 	ApprovedBy       *uuid.UUID `json:"approved_by,omitempty" db:"approved_by"`

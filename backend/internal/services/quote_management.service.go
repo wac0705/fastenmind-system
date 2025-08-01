@@ -24,7 +24,7 @@ func NewQuoteManagementService(db *gorm.DB, webhookService *WebhookService) *Quo
 		db:             db,
 		quoteRepo:      repositories.NewQuoteManagementRepository(db),
 		pdfService:     NewPDFGeneratorService(),
-		emailService:   NewEmailService(),
+		emailService:   NewEmailServiceDefault(),
 		webhookService: webhookService,
 	}
 }
@@ -45,20 +45,20 @@ func (s *QuoteManagementService) CreateQuote(req models.CreateQuoteRequest, crea
 	// 創建報價單主檔
 	quote := &models.Quote{
 		QuoteNo:       quoteNo,
-		InquiryID:     &req.InquiryID,
+		InquiryID:     req.InquiryID,
 		CustomerID:    req.CustomerID,
 		Status:        "draft",
 		ValidityDays:  req.ValidityDays,
 		PaymentTerms:  req.PaymentTerms,
 		DeliveryTerms: req.DeliveryTerms,
 		Remarks:       req.Remarks,
-		CreatedBy:     &createdBy,
+		CreatedBy:     createdBy,
 		TemplateID:    req.TemplateID,
 	}
 
 	if req.ValidityDays > 0 {
 		validUntil := time.Now().AddDate(0, 0, req.ValidityDays)
-		quote.ValidUntil = &validUntil
+		quote.ValidUntil = validUntil
 	}
 
 	if err := tx.Create(quote).Error; err != nil {
@@ -243,7 +243,7 @@ func (s *QuoteManagementService) UpdateQuote(quoteID uuid.UUID, req models.Updat
 
 	if req.ValidityDays > 0 {
 		validUntil := time.Now().AddDate(0, 0, req.ValidityDays)
-		quote.ValidUntil = &validUntil
+		quote.ValidUntil = validUntil
 	}
 
 	// 如果有新項目，刪除舊項目並創建新項目

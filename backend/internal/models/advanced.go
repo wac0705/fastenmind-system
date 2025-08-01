@@ -265,6 +265,7 @@ type BackupRecord struct {
 	ErrorMessage    string     `json:"error_message"`
 	CreatedBy       uuid.UUID  `gorm:"type:uuid" json:"created_by"`
 	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 
 	// Relations
 	Company *Company `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
