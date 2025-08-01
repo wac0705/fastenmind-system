@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -62,9 +61,9 @@ func (h *InventoryHandler) List(c echo.Context) error {
 		params["search"] = search
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	items, total, err := h.service.List(userClaims.CompanyID, params)
+	items, total, err := h.service.List(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -137,9 +136,9 @@ func (h *InventoryHandler) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	item, err := h.service.Create(userClaims.CompanyID, req)
+	item, err := h.service.Create(companyID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -219,9 +218,9 @@ func (h *InventoryHandler) AdjustStock(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	userID := getUserIDFromContext(c)
 	
-	movement, err := h.service.AdjustStock(id, userClaims.UserID, req)
+	movement, err := h.service.AdjustStock(id, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -244,9 +243,9 @@ func (h *InventoryHandler) TransferStock(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	userID := getUserIDFromContext(c)
 	
-	movement, err := h.service.TransferStock(userClaims.UserID, req)
+	movement, err := h.service.TransferStock(userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -300,9 +299,9 @@ func (h *InventoryHandler) GetMovements(c echo.Context) error {
 // @Success 200 {object} service.InventoryStats
 // @Router /api/inventory/stats [get]
 func (h *InventoryHandler) GetStats(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	stats, err := h.service.GetInventoryStats(userClaims.CompanyID)
+	stats, err := h.service.GetInventoryStats(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -319,9 +318,9 @@ func (h *InventoryHandler) GetStats(c echo.Context) error {
 // @Success 200 {array} models.Inventory
 // @Router /api/inventory/low-stock [get]
 func (h *InventoryHandler) GetLowStock(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	items, err := h.service.GetLowStockItems(userClaims.CompanyID)
+	items, err := h.service.GetLowStockItems(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -338,9 +337,9 @@ func (h *InventoryHandler) GetLowStock(c echo.Context) error {
 // @Success 200 {object} service.StockValuation
 // @Router /api/inventory/valuation [get]
 func (h *InventoryHandler) GetValuation(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	valuation, err := h.service.GetStockValuation(userClaims.CompanyID)
+	valuation, err := h.service.GetStockValuation(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -359,9 +358,9 @@ func (h *InventoryHandler) GetValuation(c echo.Context) error {
 // @Success 200 {array} models.Warehouse
 // @Router /api/warehouses [get]
 func (h *InventoryHandler) ListWarehouses(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	warehouses, err := h.service.ListWarehouses(userClaims.CompanyID)
+	warehouses, err := h.service.ListWarehouses(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -384,9 +383,9 @@ func (h *InventoryHandler) CreateWarehouse(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	warehouse, err := h.service.CreateWarehouse(userClaims.CompanyID, req)
+	warehouse, err := h.service.CreateWarehouse(companyID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -405,9 +404,9 @@ func (h *InventoryHandler) CreateWarehouse(c echo.Context) error {
 // @Success 200 {array} models.StockAlert
 // @Router /api/inventory/alerts [get]
 func (h *InventoryHandler) GetAlerts(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	alerts, err := h.service.GetActiveAlerts(userClaims.CompanyID)
+	alerts, err := h.service.GetActiveAlerts(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -437,9 +436,9 @@ func (h *InventoryHandler) ListStockTakes(c echo.Context) error {
 		params["warehouse_id"] = warehouseID
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	stockTakes, err := h.service.ListStockTakes(userClaims.CompanyID, params)
+	stockTakes, err := h.service.ListStockTakes(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -462,9 +461,10 @@ func (h *InventoryHandler) CreateStockTake(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	stockTake, err := h.service.CreateStockTake(userClaims.CompanyID, userClaims.UserID, req)
+	stockTake, err := h.service.CreateStockTake(companyID, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
