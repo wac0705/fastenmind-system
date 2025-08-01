@@ -652,7 +652,7 @@ func (s *QuoteManagementService) GetQuoteVersion(versionID uuid.UUID) (*models.Q
 }
 
 // GetTermsTemplates 獲取條款模板
-func (s *QuoteManagementService) GetTermsTemplates(templateType string) ([]models.TermsTemplate, error) {
+func (s *QuoteManagementService) GetTermsTemplates(templateType string) ([]models.QuoteTermsTemplate, error) {
 	return s.quoteRepo.GetTermsTemplates(templateType)
 }
 
