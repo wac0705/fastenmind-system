@@ -10,8 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"fastenmind-system/internal/models"
-	"fastenmind-system/internal/repositories"
+	"github.com/fastenmind/fastener-api/internal/models"
+	"github.com/fastenmind/fastener-api/internal/repositories"
 )
 
 type AdvancedService struct {
