@@ -195,6 +195,7 @@ type PurchaseOrder struct {
 	OrderDate         time.Time  `json:"order_date"`
 	RequiredDate      time.Time  `json:"required_date"`
 	PromisedDate      *time.Time `json:"promised_date"`
+	ActualEndDate     *time.Time `json:"actual_end_date"`
 	
 	// Financial
 	SubTotal          float64    `json:"sub_total"`

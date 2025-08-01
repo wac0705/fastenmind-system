@@ -570,7 +570,7 @@ func (s *systemService) CheckSystemHealth(ctx context.Context) (map[string]*mode
 
 // Backup Record operations
 func (s *systemService) CreateBackupRecord(ctx context.Context, backup *models.BackupRecord, userID uuid.UUID) error {
-	backup.CreatedBy = &userID
+	backup.CreatedBy = userID
 	return s.systemRepo.CreateBackupRecord(backup)
 }
 
@@ -591,16 +591,20 @@ func (s *systemService) DeleteBackupRecord(ctx context.Context, id uuid.UUID) er
 }
 
 func (s *systemService) PerformBackup(ctx context.Context, backupType string, companyID *uuid.UUID, userID uuid.UUID) (*models.BackupRecord, error) {
+	var backupCompanyID uuid.UUID
+	if companyID != nil {
+		backupCompanyID = *companyID
+	} else {
+		// Generate a default UUID for system-wide backups
+		backupCompanyID = uuid.Nil
+	}
+	
 	backup := &models.BackupRecord{
-		CompanyID:     companyID,
-		Type:          backupType,
+		CompanyID:     backupCompanyID,
+		BackupType:    backupType,
 		Status:        "running",
-		BackupName:    fmt.Sprintf("%s_backup_%s", backupType, time.Now().Format("20060102_150405")),
-		Description:   fmt.Sprintf("Automated %s backup", backupType),
-		StartedAt:     time.Now(),
-		RetentionDays: 30,
-		ExpiresAt:     time.Now().AddDate(0, 0, 30),
-		CreatedBy:     &userID,
+		StartTime:     time.Now(),
+		CreatedBy:     userID,
 	}
 	
 	if err := s.systemRepo.CreateBackupRecord(backup); err != nil {
