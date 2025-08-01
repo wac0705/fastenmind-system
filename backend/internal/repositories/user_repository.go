@@ -23,6 +23,10 @@ func (r *UserRepository) GetUserByID(id uuid.UUID) (*model.Account, error) {
 	return &user, nil
 }
 
+func (r *UserRepository) GetUser(id uuid.UUID) (*model.Account, error) {
+	return r.GetUserByID(id)
+}
+
 func (r *UserRepository) GetUserByEmail(email string) (*model.Account, error) {
 	var user model.Account
 	err := r.db.First(&user, "email = ?", email).Error

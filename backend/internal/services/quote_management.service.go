@@ -367,7 +367,7 @@ func (s *QuoteManagementService) SubmitForApproval(quoteID uuid.UUID, req models
 
 	// Trigger webhook for quote submitted for approval
 	if s.webhookService != nil {
-		go s.webhookService.TriggerQuoteSubmittedForApproval(quoteID, quote.CompanyID, submittedBy)
+		go s.webhookService.TriggerQuoteSubmittedForApproval(quoteID.String())
 	}
 
 	return nil

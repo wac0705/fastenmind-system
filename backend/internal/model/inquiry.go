@@ -16,6 +16,7 @@ type Inquiry struct {
 	Status             string     `json:"status" db:"status"`
 	ProductCategory    string     `json:"product_category" db:"product_category"`
 	ProductName        string     `json:"product_name" db:"product_name"`
+	PartNo             string     `json:"part_no" db:"part_no"`
 	DrawingFiles       []string   `json:"drawing_files" db:"drawing_files"`
 	Quantity           int        `json:"quantity" db:"quantity"`
 	Unit               string     `json:"unit" db:"unit"`

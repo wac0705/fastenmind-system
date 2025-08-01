@@ -21,8 +21,13 @@ type Order struct {
 	PONumber       string     `json:"po_number"`       // Customer's PO number
 	Quantity       int        `json:"quantity"`
 	UnitPrice      float64    `json:"unit_price"`
+	SubTotal       float64    `json:"sub_total"`
+	TaxRate        float64    `json:"tax_rate"`
+	TaxAmount      float64    `json:"tax_amount"`
 	TotalAmount    float64    `json:"total_amount"`
 	Currency       string     `gorm:"default:'USD'" json:"currency"`
+	ExchangeRate   float64    `json:"exchange_rate"`
+	InvoiceID      *uuid.UUID `gorm:"type:uuid" json:"invoice_id,omitempty"`
 	
 	// Delivery Info
 	DeliveryMethod string     `json:"delivery_method"` // EXW, FOB, CIF, etc.
@@ -69,9 +74,13 @@ func (o *Order) BeforeCreate(tx *gorm.DB) error {
 type OrderItem struct {
 	ID             uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
 	OrderID        uuid.UUID  `gorm:"type:uuid;not null" json:"order_id"`
+	ProductID      uuid.UUID  `gorm:"type:uuid;not null" json:"product_id"`
 	PartNo         string     `gorm:"not null" json:"part_no"`
+	ProductName    string     `json:"product_name"`
 	Description    string     `json:"description"`
-	Quantity       int        `gorm:"not null" json:"quantity"`
+	Specification  string     `json:"specification"`
+	Quantity       float64    `gorm:"not null" json:"quantity"`
+	Unit           string     `json:"unit"`
 	UnitPrice      float64    `gorm:"not null" json:"unit_price"`
 	TotalPrice     float64    `gorm:"not null" json:"total_price"`
 	

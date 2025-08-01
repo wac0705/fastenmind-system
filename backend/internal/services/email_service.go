@@ -41,3 +41,9 @@ func (s *EmailService) SendQuoteEmail(to []string, quoteID string, attachments [
 	// Implement quote email sending logic
 	return s.SendEmail(to, fmt.Sprintf("Quote #%s", quoteID), "Please find attached your quote.")
 }
+
+func (s *EmailService) SendQuote(to []string, subject string, body string, attachmentPath string) error {
+	// Implement quote sending with attachment
+	fmt.Printf("Sending quote to %v with subject: %s, attachment: %s\n", to, subject, attachmentPath)
+	return nil
+}

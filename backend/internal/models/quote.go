@@ -49,6 +49,7 @@ type Quote struct {
 	TemplateID       *uuid.UUID `gorm:"type:uuid" json:"template_id,omitempty"`
 	CurrentVersionID *uuid.UUID `gorm:"type:uuid" json:"current_version_id,omitempty"`
 	TotalAmount      float64    `json:"total_amount"`
+	ApprovedAmount   float64    `json:"approved_amount"`
 	ApprovalStatus   string     `json:"approval_status"`
 	ApprovedBy       *uuid.UUID `gorm:"type:uuid" json:"approved_by,omitempty"`
 	ApprovedAt       *time.Time `json:"approved_at,omitempty"`

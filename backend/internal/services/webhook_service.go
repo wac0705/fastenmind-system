@@ -69,3 +69,18 @@ func (s *WebhookService) TriggerQuoteSubmittedForApproval(quoteID string) error 
 	fmt.Printf("Quote submitted for approval event triggered for quote ID: %s\n", quoteID)
 	return nil
 }
+
+func (s *WebhookService) TriggerQuoteApproved(quoteID string) error {
+	fmt.Printf("Quote approved event triggered for quote ID: %s\n", quoteID)
+	return nil
+}
+
+func (s *WebhookService) TriggerQuoteRejected(quoteID string) error {
+	fmt.Printf("Quote rejected event triggered for quote ID: %s\n", quoteID)
+	return nil
+}
+
+func (s *WebhookService) TriggerQuoteSent(quoteID string) error {
+	fmt.Printf("Quote sent event triggered for quote ID: %s\n", quoteID)
+	return nil
+}
