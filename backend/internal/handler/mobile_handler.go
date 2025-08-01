@@ -461,7 +461,7 @@ func (h *MobileHandler) GetLatestAppVersion(c echo.Context) error {
 	}
 
 	companyID := getCompanyIDFromContext(c)
-	version, err := h.mobileService.GetLatestAppVersion(c.Request().Context(), platform, companyID)
+	version, err := h.mobileService.GetLatestAppVersion(c.Request().Context(), platform, &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusNotFound, "No app version found")
 	}
@@ -557,7 +557,7 @@ func (h *MobileHandler) GetMobileConfig(c echo.Context) error {
 	}
 
 	companyID := getCompanyIDFromContext(c)
-	value, err := h.mobileService.GetMobileConfig(c.Request().Context(), key, platform, companyID)
+	value, err := h.mobileService.GetMobileConfig(c.Request().Context(), key, platform, &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusNotFound, "Configuration not found")
 	}
@@ -575,7 +575,7 @@ func (h *MobileHandler) GetMobileConfigs(c echo.Context) error {
 	}
 
 	companyID := getCompanyIDFromContext(c)
-	configs, err := h.mobileService.GetMobileConfigs(c.Request().Context(), platform, companyID)
+	configs, err := h.mobileService.GetMobileConfigs(c.Request().Context(), platform, &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile configurations")
 	}
@@ -601,7 +601,7 @@ func (h *MobileHandler) SetMobileConfig(c echo.Context) error {
 func (h *MobileHandler) GetMobileStatistics(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
 
-	stats, err := h.mobileService.GetMobileStatistics(c.Request().Context(), companyID)
+	stats, err := h.mobileService.GetMobileStatistics(c.Request().Context(), &companyID)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "Failed to get mobile statistics")
 	}

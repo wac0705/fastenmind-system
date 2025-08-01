@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -73,9 +72,10 @@ func (h *N8NHandler) CreateWorkflow(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	workflow, err := h.service.CreateWorkflow(userClaims.CompanyID, userClaims.UserID, req)
+	workflow, err := h.service.CreateWorkflow(companyID, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -169,7 +169,7 @@ func (h *N8NHandler) GetWorkflow(c echo.Context) error {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/n8n/workflows [get]
 func (h *N8NHandler) ListWorkflows(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
 	params := make(map[string]interface{})
 	if page := c.QueryParam("page"); page != "" {
@@ -188,7 +188,7 @@ func (h *N8NHandler) ListWorkflows(c echo.Context) error {
 		}
 	}
 	
-	workflows, total, err := h.service.ListWorkflows(userClaims.CompanyID, params)
+	workflows, total, err := h.service.ListWorkflows(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -249,9 +249,10 @@ func (h *N8NHandler) TriggerWorkflow(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
-	execution, err := h.service.TriggerWorkflow(userClaims.CompanyID, userClaims.UserID, req)
+	execution, err := h.service.TriggerWorkflow(companyID, userID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -274,7 +275,7 @@ func (h *N8NHandler) TriggerWorkflow(c echo.Context) error {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/n8n/executions [get]
 func (h *N8NHandler) ListExecutions(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
 	params := make(map[string]interface{})
 	if workflowID := c.QueryParam("workflow_id"); workflowID != "" {
@@ -300,7 +301,7 @@ func (h *N8NHandler) ListExecutions(c echo.Context) error {
 		}
 	}
 	
-	executions, total, err := h.service.GetExecutions(userClaims.CompanyID, params)
+	executions, total, err := h.service.GetExecutions(companyID, params)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -369,9 +370,9 @@ func (h *N8NHandler) CancelExecution(c echo.Context) error {
 // @Success 200 {array} models.N8NWebhook
 // @Router /api/n8n/webhooks [get]
 func (h *N8NHandler) ListWebhooks(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	webhooks, err := h.service.ListWebhooks(userClaims.CompanyID)
+	webhooks, err := h.service.ListWebhooks(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -394,9 +395,9 @@ func (h *N8NHandler) RegisterWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	webhook, err := h.service.RegisterWebhook(userClaims.CompanyID, req)
+	webhook, err := h.service.RegisterWebhook(companyID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -464,9 +465,9 @@ func (h *N8NHandler) DeleteWebhook(c echo.Context) error {
 // @Success 200 {array} models.N8NScheduledTask
 // @Router /api/n8n/scheduled-tasks [get]
 func (h *N8NHandler) ListScheduledTasks(c echo.Context) error {
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	tasks, err := h.service.ListScheduledTasks(userClaims.CompanyID)
+	tasks, err := h.service.ListScheduledTasks(companyID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -489,9 +490,9 @@ func (h *N8NHandler) CreateScheduledTask(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
 	
-	task, err := h.service.CreateScheduledTask(userClaims.CompanyID, req)
+	task, err := h.service.CreateScheduledTask(companyID, req)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
