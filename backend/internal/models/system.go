@@ -342,6 +342,8 @@ func (sh *SystemHealth) BeforeCreate(tx *gorm.DB) error {
 }
 
 // BackupRecord represents system backup records
+// Commented out - duplicate definition exists in advanced.go
+/*
 type BackupRecord struct {
 	ID            uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
 	CompanyID     *uuid.UUID `gorm:"type:uuid" json:"company_id"` // null for full system backup
@@ -382,11 +384,15 @@ type BackupRecord struct {
 	Company       *Company   `gorm:"foreignKey:CompanyID" json:"company,omitempty"`
 	Creator       *User      `gorm:"foreignKey:CreatedBy" json:"creator,omitempty"`
 }
+*/
 
+// Commented out - using BackupRecord from advanced.go
+/*
 func (br *BackupRecord) BeforeCreate(tx *gorm.DB) error {
 	br.ID = uuid.New()
 	return nil
 }
+*/
 
 // SystemTask represents background system tasks
 type SystemTask struct {

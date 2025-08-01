@@ -27,6 +27,8 @@ func (h *HSCode) BeforeCreate(tx *gorm.DB) error {
 }
 
 // TariffRate represents tariff rates between countries
+// Commented out - duplicate definition exists in trade.go
+/*
 type TariffRate struct {
 	ID                     uuid.UUID  `gorm:"type:uuid;primary_key" json:"id"`
 	HSCode                 string     `gorm:"not null;index" json:"hs_code"`
@@ -45,13 +47,19 @@ type TariffRate struct {
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
+*/
 
+// Commented out - using TariffRate from trade.go
+/*
 func (t *TariffRate) BeforeCreate(tx *gorm.DB) error {
 	t.ID = uuid.New()
 	return nil
 }
+*/
 
 // TradeAgreement represents trade agreements between countries
+// Commented out - duplicate definition exists in trade.go
+/*
 type TradeAgreement struct {
 	ID                  uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
 	AgreementName       string    `gorm:"not null" json:"agreement_name"`
@@ -63,11 +71,15 @@ type TradeAgreement struct {
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
 }
+*/
 
+// Commented out - using TradeAgreement from trade.go
+/*
 func (t *TradeAgreement) BeforeCreate(tx *gorm.DB) error {
 	t.ID = uuid.New()
 	return nil
 }
+*/
 
 // TariffCalculation represents a tariff calculation record
 type TariffCalculation struct {

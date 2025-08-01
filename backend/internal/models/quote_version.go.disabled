@@ -1,0 +1,2 @@
+// This file is disabled due to duplicate QuoteVersion struct definition
+// The QuoteVersion struct is already defined in quote_management.go
