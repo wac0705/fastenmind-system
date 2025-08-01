@@ -6,4 +6,7 @@ import (
 
 // Type alias for backward compatibility
 type User = model.Account
+type Account = model.Account
 type Company = model.Company
+type Customer = model.Customer
+type Inquiry = model.Inquiry
