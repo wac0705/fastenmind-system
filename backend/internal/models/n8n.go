@@ -151,3 +151,12 @@ func (j *JSONB) Scan(value interface{}) error {
 	
 	return json.Unmarshal(bytes, j)
 }
+
+// ConvertMapToJSONB converts map[string]string to JSONB
+func ConvertMapToJSONB(m map[string]string) JSONB {
+	result := make(JSONB)
+	for k, v := range m {
+		result[k] = v
+	}
+	return result
+}
