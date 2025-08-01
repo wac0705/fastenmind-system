@@ -26,7 +26,7 @@ func (h *ReportHandler) CreateReport(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -50,7 +50,7 @@ func (h *ReportHandler) UpdateReport(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -78,7 +78,7 @@ func (h *ReportHandler) GetReport(c echo.Context) error {
 }
 
 func (h *ReportHandler) ListReports(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -167,7 +167,7 @@ func (h *ReportHandler) DuplicateReport(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid report ID"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -187,7 +187,7 @@ func (h *ReportHandler) CreateReportTemplate(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -211,7 +211,7 @@ func (h *ReportHandler) UpdateReportTemplate(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -240,7 +240,7 @@ func (h *ReportHandler) GetReportTemplate(c echo.Context) error {
 
 func (h *ReportHandler) ListReportTemplates(c echo.Context) error {
 	var companyID *uuid.UUID
-	if cid, err := getCompanyIDFromContext(c); err == nil {
+	if cid, err := getCompanyIDFromContextWithError(c); err == nil {
 		companyID = &cid
 	}
 
@@ -323,7 +323,7 @@ func (h *ReportHandler) ExecuteReport(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid report ID"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -442,7 +442,7 @@ func (h *ReportHandler) DownloadReportResult(c echo.Context) error {
 
 // Business operations
 func (h *ReportHandler) GetReportDashboard(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -456,7 +456,7 @@ func (h *ReportHandler) GetReportDashboard(c echo.Context) error {
 }
 
 func (h *ReportHandler) GetReportStatistics(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -470,7 +470,7 @@ func (h *ReportHandler) GetReportStatistics(c echo.Context) error {
 }
 
 func (h *ReportHandler) GetPopularReports(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -491,7 +491,7 @@ func (h *ReportHandler) GetPopularReports(c echo.Context) error {
 }
 
 func (h *ReportHandler) GetRecentExecutions(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -517,7 +517,7 @@ func (h *ReportHandler) GenerateReportFromTemplate(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid template ID"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -572,7 +572,7 @@ func (h *ReportHandler) ExportReport(c echo.Context) error {
 }
 
 func (h *ReportHandler) ImportReports(c echo.Context) error {
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -627,7 +627,7 @@ func (h *ReportHandler) GetReportSubscription(c echo.Context) error {
 }
 
 func (h *ReportHandler) ListReportSubscriptions(c echo.Context) error {
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}

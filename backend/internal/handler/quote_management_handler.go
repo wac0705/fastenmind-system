@@ -98,7 +98,7 @@ func (h *QuoteManagementHandler) GetQuote(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid quote ID"})
 	}
 
-	quote, err := h.quoteService.quoteRepo.GetQuoteByID(id)
+	quote, err := h.quoteService.GetQuote(id)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Quote not found"})
 	}
@@ -131,7 +131,7 @@ func (h *QuoteManagementHandler) GetQuotes(c echo.Context) error {
 	status := c.QueryParam("status")
 	companyID := c.Get("company_id").(uuid.UUID)
 
-	quotes, total, err := h.quoteService.quoteRepo.GetQuotes(companyID, page, pageSize, status)
+	quotes, total, err := h.quoteService.GetQuotes(companyID, page, pageSize, status)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -269,7 +269,7 @@ func (h *QuoteManagementHandler) GetQuoteVersion(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid version ID"})
 	}
 
-	version, err := h.quoteService.quoteRepo.GetQuoteVersion(versionID)
+	version, err := h.quoteService.GetQuoteVersion(versionID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Version not found"})
 	}
@@ -339,7 +339,7 @@ func (h *QuoteManagementHandler) GetQuoteActivityLogs(c echo.Context) error {
 func (h *QuoteManagementHandler) GetTermsTemplates(c echo.Context) error {
 	templateType := c.QueryParam("type")
 	
-	templates, err := h.quoteService.quoteRepo.GetTermsTemplates(templateType)
+	templates, err := h.quoteService.GetTermsTemplates(templateType)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
@@ -356,7 +356,7 @@ func (h *QuoteManagementHandler) GetTermsTemplates(c echo.Context) error {
 // @Failure 500 {object} map[string]string
 // @Router /api/quotes/templates [get]
 func (h *QuoteManagementHandler) GetQuoteTemplates(c echo.Context) error {
-	templates, err := h.quoteService.quoteRepo.GetQuoteTemplates()
+	templates, err := h.quoteService.GetQuoteTemplates()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
