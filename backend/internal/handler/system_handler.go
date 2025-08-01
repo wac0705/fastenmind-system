@@ -616,19 +616,7 @@ func (h *SystemHandler) GetSystemInfo(c echo.Context) error {
 	return response.Success(c, info, "System info retrieved successfully")
 }
 
-// Helper functions
-func getUserIDFromContext(c echo.Context) uuid.UUID {
-	// This should be implemented based on your authentication middleware
-	// For now, returning a placeholder UUID
-	return uuid.MustParse("00000000-0000-0000-0000-000000000001")
-}
-
-func getCompanyIDFromContext(c echo.Context) *uuid.UUID {
-	// This should be implemented based on your authentication middleware
-	// For now, returning a placeholder UUID
-	companyID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-	return &companyID
-}
+// Note: getUserIDFromContext and getCompanyIDFromContext are defined in common.go
 
 func getListParams(c echo.Context) map[string]interface{} {
 	params := make(map[string]interface{})

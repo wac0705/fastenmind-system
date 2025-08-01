@@ -694,35 +694,4 @@ func (h *SupplierHandler) GetSupplierDashboard(c echo.Context) error {
 	return c.JSON(http.StatusOK, dashboard)
 }
 
-// Helper functions
-func getUserIDFromContext(c echo.Context) (uuid.UUID, error) {
-	userID := c.Get("user_id")
-	if userID == nil {
-		return uuid.Nil, echo.NewHTTPError(http.StatusUnauthorized, "User ID not found in context")
-	}
-
-	switch v := userID.(type) {
-	case string:
-		return uuid.Parse(v)
-	case uuid.UUID:
-		return v, nil
-	default:
-		return uuid.Nil, echo.NewHTTPError(http.StatusUnauthorized, "Invalid user ID format")
-	}
-}
-
-func getCompanyIDFromContext(c echo.Context) (uuid.UUID, error) {
-	companyID := c.Get("company_id")
-	if companyID == nil {
-		return uuid.Nil, echo.NewHTTPError(http.StatusUnauthorized, "Company ID not found in context")
-	}
-
-	switch v := companyID.(type) {
-	case string:
-		return uuid.Parse(v)
-	case uuid.UUID:
-		return v, nil
-	default:
-		return uuid.Nil, echo.NewHTTPError(http.StatusUnauthorized, "Invalid company ID format")
-	}
-}
+// Note: getUserIDFromContext and getCompanyIDFromContext are defined in common.go

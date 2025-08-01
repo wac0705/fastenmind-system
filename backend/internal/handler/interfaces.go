@@ -13,7 +13,7 @@ type InquiryHandler struct{}
 type ProcessHandler struct{}
 type EquipmentHandler struct{}
 type AssignmentRuleHandler struct{}
-type TariffHandler struct{}
+// TariffHandler is defined in tariff_handler.go
 type ComplianceHandler struct{}
 
 // Placeholder methods
@@ -61,12 +61,7 @@ func (h *AssignmentRuleHandler) Get(c echo.Context) error { return nil }
 func (h *AssignmentRuleHandler) Update(c echo.Context) error { return nil }
 func (h *AssignmentRuleHandler) Delete(c echo.Context) error { return nil }
 
-func (h *TariffHandler) List(c echo.Context) error { return nil }
-func (h *TariffHandler) Create(c echo.Context) error { return nil }
-func (h *TariffHandler) Get(c echo.Context) error { return nil }
-func (h *TariffHandler) Update(c echo.Context) error { return nil }
-func (h *TariffHandler) Delete(c echo.Context) error { return nil }
-func (h *TariffHandler) Calculate(c echo.Context) error { return nil }
+// TariffHandler methods are defined in tariff_handler.go
 
 func (h *ComplianceHandler) Check(c echo.Context) error { return nil }
 func (h *ComplianceHandler) GetRules(c echo.Context) error { return nil }
@@ -83,7 +78,7 @@ func NewEquipmentHandler(svc service.EquipmentService) *EquipmentHandler { retur
 func NewAssignmentRuleHandler(svc service.AssignmentRuleService) *AssignmentRuleHandler {
 	return &AssignmentRuleHandler{}
 }
-func NewTariffHandler(svc service.TariffService) *TariffHandler { return &TariffHandler{} }
+// NewTariffHandler is defined in tariff_handler.go
 func NewComplianceHandler(svc service.ComplianceService) *ComplianceHandler {
 	return &ComplianceHandler{}
 }
