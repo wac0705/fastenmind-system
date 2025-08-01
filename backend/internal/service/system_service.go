@@ -617,10 +617,10 @@ func (s *systemService) PerformBackup(ctx context.Context, backupType string, co
 		
 		now := time.Now()
 		backup.Status = "completed"
-		backup.CompletedAt = &now
-		backup.Duration = now.Sub(backup.StartedAt).Seconds()
+		backup.EndTime = &now
+		backup.Duration = int64(now.Sub(backup.StartTime).Seconds())
 		backup.FileSize = 1024 * 1024 * 100 // 100MB
-		backup.FilePath = fmt.Sprintf("/backups/%s.sql", backup.BackupName)
+		backup.FilePath = fmt.Sprintf("/backups/%s_backup_%s.sql", backupType, time.Now().Format("20060102_150405"))
 		
 		s.systemRepo.UpdateBackupRecord(backup)
 	}()

@@ -151,16 +151,17 @@ func (s *tariffService) CalculateTariff(req TariffCalculationRequest) (*TariffCa
 	}
 	
 	// Check for preferential treatment
-	effectiveRate := rate.RateValue
-	if req.PreferentialTreatment && rate.PreferentialRate > 0 {
-		originalRate := effectiveRate
-		effectiveRate = rate.PreferentialRate
-		details.PreferentialApplied = true
-		
-		// Add conditions warning if any
-		if rate.PreferentialConditions != "" {
+	effectiveRate := rate.Rate
+	if req.PreferentialTreatment && rate.AgreementType != "" {
+		// Apply preferential rate based on agreement type
+		if rate.AgreementType == "fta" || rate.AgreementType == "gsp" {
+			originalRate := effectiveRate
+			effectiveRate = effectiveRate * 0.5 // 50% reduction for FTA/GSP
+			details.PreferentialApplied = true
+			
+			// Add agreement type info
 			result.Warnings = append(result.Warnings, 
-				fmt.Sprintf("Preferential rate conditions: %s", rate.PreferentialConditions))
+				fmt.Sprintf("Preferential rate applied due to %s agreement", rate.AgreementType))
 		}
 	}
 	
@@ -176,14 +177,16 @@ func (s *tariffService) CalculateTariff(req TariffCalculationRequest) (*TariffCa
 		if req.Quantity <= 0 {
 			return nil, errors.New("quantity required for specific duty calculation")
 		}
-		details.SpecificDuty = rate.SpecificRate * req.Quantity
+		// For specific duty, use the rate as a fixed amount per unit
+		details.SpecificDuty = rate.Rate * req.Quantity
 		details.TotalDuty = details.SpecificDuty
 		
 	case "compound":
 		// Both ad valorem and specific
 		details.AdValoremDuty = req.ProductValue * (effectiveRate / 100)
 		if req.Quantity > 0 && rate.SpecificRate > 0 {
-			details.SpecificDuty = rate.SpecificRate * req.Quantity
+			// For specific duty, use the rate as a fixed amount per unit
+		details.SpecificDuty = rate.Rate * req.Quantity
 		}
 		details.TotalDuty = details.AdValoremDuty + details.SpecificDuty
 		
