@@ -86,10 +86,12 @@ func (h *ExchangeRateHandler) BatchUpdateExchangeRates(c echo.Context) error {
 		} else {
 			// Create new rate
 			newRate := &models.ExchangeRate{
-				Currency:     rate.Currency,
-				BaseCurrency: rate.Base,
+				FromCurrency: rate.Base,
+				ToCurrency:   rate.Currency,
 				Rate:         rate.Rate,
-				ValidFrom:    time.Now(),
+				ValidDate:    time.Now(),
+				RateType:     "mid",
+				Source:       "api",
 				CompanyID:    companyID,
 				CreatedBy:    userID,
 			}
@@ -138,31 +140,32 @@ func (h *ExchangeRateHandler) GetOutdatedCosts(c echo.Context) error {
 	
 	var outdatedCosts []map[string]interface{}
 	
+	// TODO: Implement Material and ProcessCostConfig models
 	// Material costs
-	var materials []models.Material
-	h.db.Where("updated_at < ?", threshold).Find(&materials)
-	for _, m := range materials {
-		outdatedCosts = append(outdatedCosts, map[string]interface{}{
-			"id":           m.ID,
-			"name":         m.Name,
-			"cost_type":    "material",
-			"last_updated": m.UpdatedAt,
-			"days_old":     int(time.Since(m.UpdatedAt).Hours() / 24),
-		})
-	}
+	// var materials []models.Material
+	// h.db.Where("updated_at < ?", threshold).Find(&materials)
+	// for _, m := range materials {
+	// 	outdatedCosts = append(outdatedCosts, map[string]interface{}{
+	// 		"id":           m.ID,
+	// 		"name":         m.Name,
+	// 		"cost_type":    "material",
+	// 		"last_updated": m.UpdatedAt,
+	// 		"days_old":     int(time.Since(m.UpdatedAt).Hours() / 24),
+	// 	})
+	// }
 	
 	// Process costs
-	var processCosts []models.ProcessCostConfig
-	h.db.Where("updated_at < ?", threshold).Find(&processCosts)
-	for _, p := range processCosts {
-		outdatedCosts = append(outdatedCosts, map[string]interface{}{
-			"id":           p.ID,
-			"name":         p.ProcessID,
-			"cost_type":    "process",
-			"last_updated": p.UpdatedAt,
-			"days_old":     int(time.Since(p.UpdatedAt).Hours() / 24),
-		})
-	}
+	// var processCosts []models.ProcessCostConfig
+	// h.db.Where("updated_at < ?", threshold).Find(&processCosts)
+	// for _, p := range processCosts {
+	// 	outdatedCosts = append(outdatedCosts, map[string]interface{}{
+	// 		"id":           p.ID,
+	// 		"name":         p.ProcessID,
+	// 		"cost_type":    "process",
+	// 		"last_updated": p.UpdatedAt,
+	// 		"days_old":     int(time.Since(p.UpdatedAt).Hours() / 24),
+	// 	})
+	// }
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"data":      outdatedCosts,

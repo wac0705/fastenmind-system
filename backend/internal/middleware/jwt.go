@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/google/uuid"
 )
 
 // JWTClaims represents the JWT claims
@@ -55,8 +56,19 @@ func JWT(secretKey string) echo.MiddlewareFunc {
 			}
 
 			// Set user context
-			c.Set("user_id", claims.UserID)
-			c.Set("company_id", claims.CompanyID)
+			// Convert string IDs to UUID for consistency with handlers
+			if userID, err := uuid.Parse(claims.UserID); err == nil {
+				c.Set("user_id", userID)
+			} else {
+				c.Set("user_id", claims.UserID)
+			}
+			
+			if companyID, err := uuid.Parse(claims.CompanyID); err == nil {
+				c.Set("company_id", companyID)
+			} else {
+				c.Set("company_id", claims.CompanyID)
+			}
+			
 			c.Set("email", claims.Email)
 			c.Set("role", claims.Role)
 
@@ -87,4 +99,11 @@ func GetRole(c echo.Context) string {
 		return role
 	}
 	return ""
+}
+
+// Auth is an alias for JWT middleware with a default secret key
+// In production, this should use a proper secret from configuration
+func Auth() echo.MiddlewareFunc {
+	// TODO: Get secret from configuration
+	return JWT("your-secret-key")
 }
