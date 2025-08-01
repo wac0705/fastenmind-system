@@ -635,3 +635,28 @@ func (s *QuoteManagementService) logActivity(tx *gorm.DB, quoteID uuid.UUID, ver
 	}
 	tx.Create(log)
 }
+
+// GetQuote 獲取單個報價單
+func (s *QuoteManagementService) GetQuote(id uuid.UUID) (*models.Quote, error) {
+	return s.quoteRepo.GetQuoteByID(id)
+}
+
+// GetQuotes 獲取報價單列表
+func (s *QuoteManagementService) GetQuotes(companyID uuid.UUID, page, pageSize int, status string) ([]models.Quote, int64, error) {
+	return s.quoteRepo.GetQuotes(companyID, page, pageSize, status)
+}
+
+// GetQuoteVersion 獲取報價單版本
+func (s *QuoteManagementService) GetQuoteVersion(versionID uuid.UUID) (*models.QuoteVersion, error) {
+	return s.quoteRepo.GetQuoteVersion(versionID)
+}
+
+// GetTermsTemplates 獲取條款模板
+func (s *QuoteManagementService) GetTermsTemplates(templateType string) ([]models.TermsTemplate, error) {
+	return s.quoteRepo.GetTermsTemplates(templateType)
+}
+
+// GetQuoteTemplates 獲取報價單模板
+func (s *QuoteManagementService) GetQuoteTemplates() ([]models.QuoteTemplate, error) {
+	return s.quoteRepo.GetQuoteTemplates()
+}

@@ -26,7 +26,7 @@ func (h *SupplierHandler) CreateSupplier(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -50,7 +50,7 @@ func (h *SupplierHandler) UpdateSupplier(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -78,7 +78,7 @@ func (h *SupplierHandler) GetSupplier(c echo.Context) error {
 }
 
 func (h *SupplierHandler) ListSuppliers(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -295,7 +295,7 @@ func (h *SupplierHandler) CreatePurchaseOrder(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -319,7 +319,7 @@ func (h *SupplierHandler) UpdatePurchaseOrder(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -347,7 +347,7 @@ func (h *SupplierHandler) GetPurchaseOrder(c echo.Context) error {
 }
 
 func (h *SupplierHandler) ListPurchaseOrders(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -403,7 +403,7 @@ func (h *SupplierHandler) ApprovePurchaseOrder(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid purchase order ID"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -521,7 +521,7 @@ func (h *SupplierHandler) CreateSupplierEvaluation(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -545,7 +545,7 @@ func (h *SupplierHandler) UpdateSupplierEvaluation(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -573,7 +573,7 @@ func (h *SupplierHandler) GetSupplierEvaluation(c echo.Context) error {
 }
 
 func (h *SupplierHandler) ListSupplierEvaluations(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -637,7 +637,7 @@ func (h *SupplierHandler) ApproveSupplierEvaluation(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid evaluation ID"})
 	}
 
-	userID, err := getUserIDFromContext(c)
+	userID, err := getUserIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
@@ -681,7 +681,7 @@ func (h *SupplierHandler) CalculateSupplierRisk(c echo.Context) error {
 }
 
 func (h *SupplierHandler) GetSupplierDashboard(c echo.Context) error {
-	companyID, err := getCompanyIDFromContext(c)
+	companyID, err := getCompanyIDFromContextWithError(c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 	}
