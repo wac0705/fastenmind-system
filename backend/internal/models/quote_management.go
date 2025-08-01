@@ -224,7 +224,9 @@ type SendQuoteRequest struct {
 	RecipientEmail string   `json:"recipient_email" binding:"required,email"`
 	RecipientName  string   `json:"recipient_name"`
 	CcEmails       []string `json:"cc_emails"`
+	Recipients     []string `json:"recipients"`      // All recipients
 	Subject        string   `json:"subject"`
+	Body           string   `json:"body"`            // Email body
 	Message        string   `json:"message"`
 	AttachPDF      bool     `json:"attach_pdf"`
 	AttachmentIDs  []string `json:"attachment_ids"`

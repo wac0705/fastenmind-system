@@ -158,7 +158,7 @@ func (s *productionService) ReleaseProductionOrder(id uuid.UUID, userID uuid.UUI
 	}
 	
 	for _, material := range materials {
-		inventory, err := s.inventoryRepo.Get(material.InventoryID.String())
+		inventory, err := s.inventoryRepo.Get(material.InventoryID)
 		if err != nil {
 			return err
 		}
@@ -427,7 +427,7 @@ func (s *productionService) IssueMaterials(productionOrderID uuid.UUID, userID u
 	for _, material := range materials {
 		if material.Status == "planned" {
 			// Check inventory availability
-			inventory, err := s.inventoryRepo.Get(material.InventoryID.String())
+			inventory, err := s.inventoryRepo.Get(material.InventoryID)
 			if err != nil {
 				return err
 			}
@@ -440,7 +440,7 @@ func (s *productionService) IssueMaterials(productionOrderID uuid.UUID, userID u
 			inventory.ReservedStock += material.PlannedQuantity
 			inventory.AvailableStock -= material.PlannedQuantity
 			
-			if err := s.inventoryRepo.Update(inventory.ID, inventory); err != nil {
+			if err := s.inventoryRepo.Update(inventory); err != nil {
 				return err
 			}
 			
@@ -705,7 +705,7 @@ func (s *productionService) updateProductionOrderProgress(productionOrderID uuid
 }
 
 func (s *productionService) updateInventoryAfterProduction(order *models.ProductionOrder) error {
-	inventory, err := s.inventoryRepo.Get(order.InventoryID.String())
+	inventory, err := s.inventoryRepo.Get(order.InventoryID)
 	if err != nil {
 		return err
 	}
@@ -714,7 +714,7 @@ func (s *productionService) updateInventoryAfterProduction(order *models.Product
 	inventory.CurrentStock += order.QualifiedQuantity
 	inventory.AvailableStock += order.QualifiedQuantity
 	
-	return s.inventoryRepo.Update(inventory.ID, inventory)
+	return s.inventoryRepo.Update(inventory)
 }
 
 func (s *productionService) returnIssuedMaterials(productionOrderID uuid.UUID) error {
@@ -725,7 +725,7 @@ func (s *productionService) returnIssuedMaterials(productionOrderID uuid.UUID) e
 	
 	for _, material := range materials {
 		if material.Status == "issued" {
-			inventory, err := s.inventoryRepo.Get(material.InventoryID.String())
+			inventory, err := s.inventoryRepo.Get(material.InventoryID)
 			if err != nil {
 				continue
 			}
@@ -736,7 +736,7 @@ func (s *productionService) returnIssuedMaterials(productionOrderID uuid.UUID) e
 				inventory.ReservedStock -= unusedQuantity
 				inventory.AvailableStock += unusedQuantity
 				
-				s.inventoryRepo.Update(inventory.ID, inventory)
+				s.inventoryRepo.Update(inventory)
 			}
 			
 			material.Status = "returned"

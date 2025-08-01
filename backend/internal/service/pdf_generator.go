@@ -94,12 +94,12 @@ func (g *pdfGenerator) GenerateQuotePDF(quote *models.Quote) ([]byte, error) {
 			pdf.Cell(0, 5, *quote.Customer.Address)
 			pdf.Ln(5)
 		}
-		if quote.Customer.ContactPerson != "" {
-			pdf.Cell(0, 5, fmt.Sprintf("Attn: %s", quote.Customer.ContactPerson))
+		if quote.Customer.ContactPerson != nil && *quote.Customer.ContactPerson != "" {
+			pdf.Cell(0, 5, fmt.Sprintf("Attn: %s", *quote.Customer.ContactPerson))
 			pdf.Ln(5)
 		}
-		if quote.Customer.Email != "" {
-			pdf.Cell(0, 5, fmt.Sprintf("Email: %s", quote.Customer.Email))
+		if quote.Customer.ContactEmail != nil && *quote.Customer.ContactEmail != "" {
+			pdf.Cell(0, 5, fmt.Sprintf("Email: %s", *quote.Customer.ContactEmail))
 			pdf.Ln(5)
 		}
 	}
