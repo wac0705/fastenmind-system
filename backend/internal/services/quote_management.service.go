@@ -455,9 +455,9 @@ func (s *QuoteManagementService) ApproveQuote(quoteID uuid.UUID, req models.Appr
 	// Trigger webhook based on approval result
 	if s.webhookService != nil {
 		if req.Approved {
-			go s.webhookService.TriggerQuoteApproved(quoteID, approverID, quote.CompanyID, approverID)
+			go s.webhookService.TriggerQuoteApproved(quoteID.String())
 		} else {
-			go s.webhookService.TriggerQuoteRejected(quoteID, req.Notes, quote.CompanyID, approverID)
+			go s.webhookService.TriggerQuoteRejected(quoteID.String())
 		}
 	}
 
@@ -502,7 +502,7 @@ func (s *QuoteManagementService) SendQuote(quoteID uuid.UUID, req models.SendQuo
 	}
 
 	// 發送郵件
-	err = s.emailService.SendQuote(req, pdfPath, quote)
+	err = s.emailService.SendQuote(req.Recipients, req.Subject, req.Body, pdfPath)
 	now := time.Now()
 	if err != nil {
 		sendLog.SendStatus = "failed"
@@ -524,7 +524,7 @@ func (s *QuoteManagementService) SendQuote(quoteID uuid.UUID, req models.SendQuo
 		
 		// Trigger webhook for quote sent
 		if s.webhookService != nil {
-			go s.webhookService.TriggerQuoteSent(quoteID, req.RecipientEmail, quote.CompanyID, sentBy)
+			go s.webhookService.TriggerQuoteSent(quoteID.String())
 		}
 	}
 

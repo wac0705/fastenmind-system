@@ -58,7 +58,7 @@ func (g *pdfGenerator) GenerateQuotePDF(quote *models.Quote) ([]byte, error) {
 	
 	pdf.SetXY(15, y+6)
 	pdf.Cell(40, 5, "Valid Until:")
-	pdf.Cell(50, 5, quote.ValidUntil)
+	pdf.Cell(50, 5, quote.ValidUntil.Format("2006-01-02"))
 	
 	pdf.SetXY(15, y+12)
 	pdf.Cell(40, 5, "Payment Terms:")
@@ -90,8 +90,8 @@ func (g *pdfGenerator) GenerateQuotePDF(quote *models.Quote) ([]byte, error) {
 	if quote.Customer != nil {
 		pdf.Cell(0, 5, quote.Customer.Name)
 		pdf.Ln(5)
-		if quote.Customer.Address != "" {
-			pdf.Cell(0, 5, quote.Customer.Address)
+		if quote.Customer.Address != nil && *quote.Customer.Address != "" {
+			pdf.Cell(0, 5, *quote.Customer.Address)
 			pdf.Ln(5)
 		}
 		if quote.Customer.ContactPerson != "" {

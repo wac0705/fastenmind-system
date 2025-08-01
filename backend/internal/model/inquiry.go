@@ -17,6 +17,11 @@ type Inquiry struct {
 	ProductCategory    string     `json:"product_category" db:"product_category"`
 	ProductName        string     `json:"product_name" db:"product_name"`
 	PartNo             string     `json:"part_no" db:"part_no"`
+	Description        string     `json:"description" db:"description"`
+	Material           string     `json:"material" db:"material"`
+	SurfaceTreatment   string     `json:"surface_treatment" db:"surface_treatment"`
+	HeatTreatment      string     `json:"heat_treatment" db:"heat_treatment"`
+	Specifications     string     `json:"specifications" db:"specifications"`
 	DrawingFiles       []string   `json:"drawing_files" db:"drawing_files"`
 	Quantity           int        `json:"quantity" db:"quantity"`
 	Unit               string     `json:"unit" db:"unit"`
