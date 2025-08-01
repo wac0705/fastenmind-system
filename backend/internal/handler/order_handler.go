@@ -70,7 +70,6 @@ func (h *OrderHandler) List(c echo.Context) error {
 	}
 	
 	companyID := getCompanyIDFromContext(c)
-	userID := getUserIDFromContext(c)
 	
 	orders, total, err := h.service.List(companyID, params)
 	if err != nil {
@@ -157,7 +156,6 @@ func (h *OrderHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	order, err := h.service.Update(id, userID, req)
@@ -192,7 +190,6 @@ func (h *OrderHandler) UpdateStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	order, err := h.service.UpdateStatus(id, userID, req.Status, req.Notes)
@@ -320,7 +317,6 @@ func (h *OrderHandler) AddDocument(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	doc, err := h.service.AddDocument(id, userID, req)
@@ -387,7 +383,6 @@ func (h *OrderHandler) GetActivities(c echo.Context) error {
 // @Router /api/orders/stats [get]
 func (h *OrderHandler) GetStats(c echo.Context) error {
 	companyID := getCompanyIDFromContext(c)
-	userID := getUserIDFromContext(c)
 	
 	params := make(map[string]interface{})
 	// Add any filter params from query string if needed

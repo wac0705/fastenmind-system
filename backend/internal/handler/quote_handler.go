@@ -58,7 +58,6 @@ func (h *QuoteHandler) List(c echo.Context) error {
 	}
 	
 	companyID := getCompanyIDFromContext(c)
-	userID := getUserIDFromContext(c)
 	
 	quotes, total, err := h.service.List(companyID, params)
 	if err != nil {
@@ -145,7 +144,6 @@ func (h *QuoteHandler) Update(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	quote, err := h.service.Update(id, userID, req)
@@ -193,7 +191,6 @@ func (h *QuoteHandler) SubmitForReview(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quote ID")
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	quote, err := h.service.SubmitForReview(id, userID)
@@ -225,7 +222,6 @@ func (h *QuoteHandler) Review(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	quote, err := h.service.Review(id, userID, req)
@@ -257,7 +253,6 @@ func (h *QuoteHandler) Send(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	quote, err := h.service.Send(id, userID, req)
@@ -355,7 +350,6 @@ func (h *QuoteHandler) Duplicate(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quote ID")
 	}
 	
-	companyID := getCompanyIDFromContext(c)
 	userID := getUserIDFromContext(c)
 	
 	quote, err := h.service.Duplicate(id, userID)
