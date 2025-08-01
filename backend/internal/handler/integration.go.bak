@@ -1,0 +1,667 @@
+package handler
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+
+	"github.com/fastenmind/fastener-api/internal/service"
+)
+
+type IntegrationHandler struct {
+	integrationService service.IntegrationService
+}
+
+func NewIntegrationHandler(integrationService service.IntegrationService) *IntegrationHandler {
+	return &IntegrationHandler{
+		integrationService: integrationService,
+	}
+}
+
+// Integration Endpoints
+func (h *IntegrationHandler) CreateIntegration(c echo.Context) error {
+	// TODO: Implement when IntegrationService is ready
+	return echo.NewHTTPError(http.StatusNotImplemented, "Integration feature not yet implemented")
+}
+
+func (h *IntegrationHandler) GetIntegration(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+
+	integration, err := h.integrationService.GetIntegration(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Integration not found")
+	}
+
+	return c.JSON(http.StatusOK, integration)
+}
+
+func (h *IntegrationHandler) ListIntegrations(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	integrationType := c.QueryParam("type")
+	status := c.QueryParam("status")
+	isActiveStr := c.QueryParam("is_active")
+	
+	var isActive *bool
+	if isActiveStr != "" {
+		activeVal := isActiveStr == "true"
+		isActive = &activeVal
+	}
+
+	integrations, err := h.integrationService.GetIntegrationsByCompany(companyID, integrationType, status, isActive)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": integrations,
+	})
+}
+
+func (h *IntegrationHandler) UpdateIntegration(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+
+	userID := getUserIDFromContext(c)
+	
+	var req service.UpdateIntegrationRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	integration, err := h.integrationService.UpdateIntegration(id, userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, integration)
+}
+
+func (h *IntegrationHandler) DeleteIntegration(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+
+	err = h.integrationService.DeleteIntegration(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *IntegrationHandler) TestIntegration(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+
+	result, err := h.integrationService.TestIntegration(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+// Integration Mapping Endpoints
+func (h *IntegrationHandler) CreateIntegrationMapping(c echo.Context) error {
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateIntegrationMappingRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	mapping, err := h.integrationService.CreateIntegrationMapping(userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, mapping)
+}
+
+func (h *IntegrationHandler) ListIntegrationMappings(c echo.Context) error {
+	integrationID, err := uuid.Parse(c.Param("integration_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+	
+	direction := c.QueryParam("direction")
+	isActiveStr := c.QueryParam("is_active")
+	
+	var isActive *bool
+	if isActiveStr != "" {
+		activeVal := isActiveStr == "true"
+		isActive = &activeVal
+	}
+
+	mappings, err := h.integrationService.GetMappingsByIntegration(integrationID, direction, isActive)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": mappings,
+	})
+}
+
+func (h *IntegrationHandler) UpdateIntegrationMapping(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid mapping ID")
+	}
+
+	userID := getUserIDFromContext(c)
+	
+	var req service.UpdateIntegrationMappingRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	mapping, err := h.integrationService.UpdateIntegrationMapping(id, userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, mapping)
+}
+
+// Webhook Endpoints
+func (h *IntegrationHandler) CreateWebhook(c echo.Context) error {
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateWebhookRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	webhook, err := h.integrationService.CreateWebhook(userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, webhook)
+}
+
+func (h *IntegrationHandler) ListWebhooks(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	integrationIDStr := c.QueryParam("integration_id")
+	var integrationID *uuid.UUID
+	if integrationIDStr != "" {
+		id, err := uuid.Parse(integrationIDStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+		}
+		integrationID = &id
+	}
+	
+	isActiveStr := c.QueryParam("is_active")
+	var isActive *bool
+	if isActiveStr != "" {
+		activeVal := isActiveStr == "true"
+		isActive = &activeVal
+	}
+
+	webhooks, err := h.integrationService.GetWebhooksByCompany(companyID, integrationID, isActive)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": webhooks,
+	})
+}
+
+func (h *IntegrationHandler) UpdateWebhook(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid webhook ID")
+	}
+
+	userID := getUserIDFromContext(c)
+	
+	var req service.UpdateWebhookRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	webhook, err := h.integrationService.UpdateWebhook(id, userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, webhook)
+}
+
+func (h *IntegrationHandler) TriggerWebhook(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid webhook ID")
+	}
+	
+	var req struct {
+		EventType string                 `json:"event_type" validate:"required"`
+		EventData map[string]interface{} `json:"event_data"`
+	}
+	
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	err = h.integrationService.TriggerWebhook(id, req.EventType, req.EventData)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Webhook triggered successfully",
+	})
+}
+
+func (h *IntegrationHandler) GetWebhookDeliveries(c echo.Context) error {
+	webhookID, err := uuid.Parse(c.Param("webhook_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid webhook ID")
+	}
+	
+	status := c.QueryParam("status")
+	limitStr := c.QueryParam("limit")
+	
+	limit := 50 // default
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
+			limit = parsedLimit
+		}
+	}
+
+	deliveries, err := h.integrationService.GetWebhookDeliveries(webhookID, status, limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": deliveries,
+	})
+}
+
+// Data Sync Job Endpoints
+func (h *IntegrationHandler) CreateDataSyncJob(c echo.Context) error {
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateDataSyncJobRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	job, err := h.integrationService.CreateDataSyncJob(userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, job)
+}
+
+func (h *IntegrationHandler) ListDataSyncJobs(c echo.Context) error {
+	integrationID, err := uuid.Parse(c.Param("integration_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid integration ID")
+	}
+	
+	status := c.QueryParam("status")
+	limitStr := c.QueryParam("limit")
+	
+	limit := 50 // default
+	if limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil {
+			limit = parsedLimit
+		}
+	}
+
+	jobs, err := h.integrationService.GetDataSyncJobsByIntegration(integrationID, status, limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": jobs,
+	})
+}
+
+func (h *IntegrationHandler) StartDataSyncJob(c echo.Context) error {
+	jobID, err := uuid.Parse(c.Param("job_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid job ID")
+	}
+
+	err = h.integrationService.StartDataSyncJob(jobID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Sync job started successfully",
+	})
+}
+
+// API Key Endpoints
+func (h *IntegrationHandler) CreateApiKey(c echo.Context) error {
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateApiKeyRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	response, err := h.integrationService.CreateApiKey(userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, response)
+}
+
+func (h *IntegrationHandler) ListApiKeys(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	userIDStr := c.QueryParam("user_id")
+	var userID *uuid.UUID
+	if userIDStr != "" {
+		id, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
+		}
+		userID = &id
+	}
+	
+	isActiveStr := c.QueryParam("is_active")
+	var isActive *bool
+	if isActiveStr != "" {
+		activeVal := isActiveStr == "true"
+		isActive = &activeVal
+	}
+
+	apiKeys, err := h.integrationService.GetApiKeysByCompany(companyID, userID, isActive)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": apiKeys,
+	})
+}
+
+func (h *IntegrationHandler) RevokeApiKey(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid API key ID")
+	}
+
+	err = h.integrationService.RevokeApiKey(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "API key revoked successfully",
+	})
+}
+
+// External System Endpoints
+func (h *IntegrationHandler) CreateExternalSystem(c echo.Context) error {
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateExternalSystemRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	system, err := h.integrationService.CreateExternalSystem(userID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, system)
+}
+
+func (h *IntegrationHandler) ListExternalSystems(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	systemType := c.QueryParam("system_type")
+	status := c.QueryParam("status")
+
+	systems, err := h.integrationService.GetExternalSystemsByCompany(companyID, systemType, status)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": systems,
+	})
+}
+
+func (h *IntegrationHandler) TestExternalSystem(c echo.Context) error {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid system ID")
+	}
+
+	result, err := h.integrationService.TestExternalSystem(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+// Integration Template Endpoints
+func (h *IntegrationHandler) ListIntegrationTemplates(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	category := c.QueryParam("category")
+	provider := c.QueryParam("provider")
+	isPublicStr := c.QueryParam("is_public")
+	isActiveStr := c.QueryParam("is_active")
+	
+	var isPublic, isActive *bool
+	if isPublicStr != "" {
+		publicVal := isPublicStr == "true"
+		isPublic = &publicVal
+	}
+	if isActiveStr != "" {
+		activeVal := isActiveStr == "true"
+		isActive = &activeVal
+	}
+
+	templates, err := h.integrationService.GetIntegrationTemplates(&companyID, category, provider, isPublic, isActive)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": templates,
+	})
+}
+
+func (h *IntegrationHandler) CreateIntegrationFromTemplate(c echo.Context) error {
+	templateID, err := uuid.Parse(c.Param("template_id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid template ID")
+	}
+
+	userID := getUserIDFromContext(c)
+	
+	var req service.CreateFromTemplateRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	integration, err := h.integrationService.CreateIntegrationFromTemplate(userID, templateID, req)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, integration)
+}
+
+// Analytics Endpoints
+func (h *IntegrationHandler) GetIntegrationStats(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	startTimeStr := c.QueryParam("start_time")
+	endTimeStr := c.QueryParam("end_time")
+	
+	var startTime, endTime time.Time
+	var err error
+	
+	if startTimeStr != "" {
+		startTime, err = time.Parse(time.RFC3339, startTimeStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid start_time format")
+		}
+	} else {
+		startTime = time.Now().AddDate(0, 0, -30) // Last 30 days
+	}
+	
+	if endTimeStr != "" {
+		endTime, err = time.Parse(time.RFC3339, endTimeStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid end_time format")
+		}
+	} else {
+		endTime = time.Now()
+	}
+
+	stats, err := h.integrationService.GetIntegrationStats(companyID, startTime, endTime)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, stats)
+}
+
+func (h *IntegrationHandler) GetIntegrationsByType(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+
+	data, err := h.integrationService.GetIntegrationsByType(companyID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": data,
+	})
+}
+
+func (h *IntegrationHandler) GetSyncJobTrends(c echo.Context) error {
+	companyID := getCompanyIDFromContext(c)
+	
+	daysStr := c.QueryParam("days")
+	days := 30 // default
+	if daysStr != "" {
+		if parsedDays, err := strconv.Atoi(daysStr); err == nil {
+			days = parsedDays
+		}
+	}
+
+	data, err := h.integrationService.GetSyncJobTrends(companyID, days)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"data": data,
+	})
+}
+
+// Utility Endpoints
+func (h *IntegrationHandler) ValidateMapping(c echo.Context) error {
+	var req struct {
+		FieldMappings   map[string]interface{} `json:"field_mappings"`
+		Transformations map[string]interface{} `json:"transformations"`
+	}
+	
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	// Simulate mapping validation
+	result := map[string]interface{}{
+		"valid":  true,
+		"errors": []string{},
+		"warnings": []string{
+			"Field 'created_at' will be auto-generated",
+		},
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+func (h *IntegrationHandler) PreviewDataTransformation(c echo.Context) error {
+	var req struct {
+		SampleData      []map[string]interface{} `json:"sample_data"`
+		FieldMappings   map[string]interface{}   `json:"field_mappings"`
+		Transformations map[string]interface{}   `json:"transformations"`
+	}
+	
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	// Simulate data transformation preview
+	result := map[string]interface{}{
+		"preview": []map[string]interface{}{
+			{
+				"original": map[string]interface{}{
+					"name":  "John Doe",
+					"email": "john@example.com",
+				},
+				"transformed": map[string]interface{}{
+					"full_name":    "John Doe",
+					"email_address": "john@example.com",
+					"created_at":   time.Now().Format(time.RFC3339),
+				},
+			},
+		},
+	}
+
+	return c.JSON(http.StatusOK, result)
+}

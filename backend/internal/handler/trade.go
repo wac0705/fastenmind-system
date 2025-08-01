@@ -12,10 +12,10 @@ import (
 )
 
 type TradeHandler struct {
-	tradeService *service.TradeService
+	tradeService service.TradeService
 }
 
-func NewTradeHandler(tradeService *service.TradeService) *TradeHandler {
+func NewTradeHandler(tradeService service.TradeService) *TradeHandler {
 	return &TradeHandler{
 		tradeService: tradeService,
 	}

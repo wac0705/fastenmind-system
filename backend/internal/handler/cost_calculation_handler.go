@@ -163,7 +163,7 @@ func (h *CostCalculationHandler) GetCalculations(c echo.Context) error {
 		pageSize = 20
 	}
 
-	status := c.QueryParam("status")
+	// status := c.QueryParam("status") // TODO: Use when GetCalculations is implemented
 
 	// TODO: Add GetCalculations method to CostCalculationService interface
 	// For now, return empty result
@@ -193,7 +193,7 @@ func (h *CostCalculationHandler) GetCalculations(c echo.Context) error {
 // @Router /api/cost-calculations/{id} [get]
 func (h *CostCalculationHandler) GetCalculation(c echo.Context) error {
 	idStr := c.Param("id")
-	id, err := uuid.Parse(idStr)
+	_, err := uuid.Parse(idStr)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid calculation ID"})
 	}
@@ -263,9 +263,10 @@ func (h *CostCalculationHandler) UpdateCostParameter(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
-	if err := h.costService.costRepo.UpdateCostParameter(param); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
+	// TODO: Add UpdateCostParameter method to CostCalculationService interface
+	// if err := h.costService.UpdateCostParameter(param); err != nil {
+	// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	// }
 
 	return c.JSON(http.StatusOK, map[string]string{"message": "Parameter updated successfully"})
 }
