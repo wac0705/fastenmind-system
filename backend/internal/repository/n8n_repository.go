@@ -277,7 +277,7 @@ func (r *n8nRepository) GetUnprocessedEvents(companyID uuid.UUID) ([]models.N8NE
 }
 
 func (r *n8nRepository) MarkEventProcessed(id uuid.UUID, workflowIDs []string) error {
-	now := gorm.NowFunc()
+	now := time.Now()
 	return r.db.Model(&models.N8NEventLog{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{

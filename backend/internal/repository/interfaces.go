@@ -7,7 +7,7 @@ type InquiryRepository interface{}
 type ProcessRepository interface{}
 type EquipmentRepository interface{}
 type AssignmentRuleRepository interface{}
-type TariffRepository interface{}
+// TariffRepository is defined in tariff_repository.go
 type ComplianceRepository interface{}
 
 // Placeholder constructors
@@ -17,5 +17,5 @@ func NewInquiryRepository(db interface{}) InquiryRepository { return nil }
 func NewProcessRepository(db interface{}) ProcessRepository { return nil }
 func NewEquipmentRepository(db interface{}) EquipmentRepository { return nil }
 func NewAssignmentRuleRepository(db interface{}) AssignmentRuleRepository { return nil }
-func NewTariffRepository(db interface{}) TariffRepository { return nil }
+// NewTariffRepository is defined in tariff_repository.go
 func NewComplianceRepository(db interface{}) ComplianceRepository { return nil }
