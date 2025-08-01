@@ -1,0 +1,197 @@
+{
+  "name": "Inquiry Notification Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "inquiry_notification",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "inquiry_notification"
+    },
+    {
+      "parameters": {
+        "functionCode": "const inquiryData = items[0].json;\nconst inquiryId = inquiryData.inquiry_id;\nconst timestamp = inquiryData.timestamp;\n\n// Format the data for further processing\nreturn [{\n  json: {\n    inquiryId,\n    timestamp,\n    event: 'inquiry.created'\n  }\n}];"
+      },
+      "id": "process-data",
+      "name": "Process Inquiry Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.API_URL}}/api/inquiries/{{$json.inquiryId}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-inquiry",
+      "name": "Get Inquiry Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@fastenmind.com",
+        "toEmail": "={{$json.assigned_engineer.email}}",
+        "subject": "新詢價單指派通知 - {{$json.inquiry_no}}",
+        "text": "您好 {{$json.assigned_engineer.full_name}},\n\n您已被指派一個新的詢價單。\n\n詢價單號: {{$json.inquiry_no}}\n客戶: {{$json.customer.name}}\n產品: {{$json.product_name}}\n數量: {{$json.quantity}} {{$json.unit}}\n交期: {{$json.required_date}}\n\n請登入系統查看詳細資訊並進行報價。\n\n此為系統自動發送郵件，請勿回覆。",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email to Engineer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 200],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "channel": "#inquiries",
+        "text": ":new: 新詢價單建立\n\n*詢價單號:* {{$json.inquiry_no}}\n*客戶:* {{$json.customer.name}}\n*產品:* {{$json.product_name}}\n*數量:* {{$json.quantity}} {{$json.unit}}\n*指派工程師:* {{$json.assigned_engineer.full_name}}\n\n<{{$env.APP_URL}}/inquiries/{{$json.id}}|查看詳情>",
+        "options": {}
+      },
+      "id": "slack-notification",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [850, 400],
+      "credentials": {
+        "slackApi": {
+          "id": "2",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "success"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-response",
+      "name": "Set Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "webhook": {
+      "main": [
+        [
+          {
+            "node": "process-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-data": {
+      "main": [
+        [
+          {
+            "node": "get-inquiry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-inquiry": {
+      "main": [
+        [
+          {
+            "node": "send-email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email": {
+      "main": [
+        [
+          {
+            "node": "set-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slack-notification": {
+      "main": [
+        [
+          {
+            "node": "set-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set-response": {
+      "main": [
+        [
+          {
+            "node": "respond-webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "inquiry_notification",
+  "meta": {
+    "instanceId": "fastenmind"
+  },
+  "tags": []
+}

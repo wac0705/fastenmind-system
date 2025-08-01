@@ -1,0 +1,217 @@
+{
+  "name": "Daily Exchange Rate Update",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "cronExpression": "0 8 * * 1-5"
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily at 8 AM (Weekdays)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.exchangerate-api.com/v4/latest/USD",
+        "options": {}
+      },
+      "id": "fetch-rates",
+      "name": "Fetch Exchange Rates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const rates = items[0].json.rates;\nconst date = items[0].json.date;\n\n// Extract relevant currencies for fastener business\nconst relevantCurrencies = ['TWD', 'CNY', 'EUR', 'JPY', 'KRW', 'SGD', 'MYR', 'THB', 'VND'];\n\nconst exchangeRates = relevantCurrencies.map(currency => ({\n  currency,\n  rate: rates[currency],\n  base: 'USD',\n  date\n}));\n\nreturn exchangeRates.map(rate => ({ json: rate }));"
+      },
+      "id": "process-rates",
+      "name": "Process Exchange Rates",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_URL}}/api/exchange-rates/batch-update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "rates",
+              "value": "={{$json}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-database",
+      "name": "Update Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#finance",
+        "text": ":currency_exchange: 匯率更新完成\n\n更新時間: {{$now.format('YYYY-MM-DD HH:mm')}}\n基準貨幣: USD\n\n{{$json.rates.map(r => `${r.currency}: ${r.rate}`).join('\\n')}}",
+        "options": {}
+      },
+      "id": "slack-notification",
+      "name": "Notify Finance Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1050, 200],
+      "credentials": {
+        "slackApi": {
+          "id": "2",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Check if any rates changed significantly (> 2%)\nconst significantChanges = [];\n\n// This would normally compare with previous rates\n// For demo, we'll just flag if rate is unusual\nconst rates = items[0].json.rates;\n\nif (rates.TWD > 32 || rates.TWD < 30) {\n  significantChanges.push(`TWD: ${rates.TWD} (異常)`);\n}\n\nif (rates.CNY > 7.5 || rates.CNY < 6.5) {\n  significantChanges.push(`CNY: ${rates.CNY} (異常)`);\n}\n\nreturn [{\n  json: {\n    hasSignificantChanges: significantChanges.length > 0,\n    changes: significantChanges\n  }\n}];"
+      },
+      "id": "check-changes",
+      "name": "Check Significant Changes",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.hasSignificantChanges}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-significant",
+      "name": "IF Significant Changes",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@fastenmind.com",
+        "toEmail": "finance@fastenmind.com",
+        "subject": "⚠️ 匯率異常變動警報",
+        "text": "偵測到以下匯率異常變動：\n\n{{$json.changes.join('\\n')}}\n\n請確認是否需要調整報價策略。",
+        "options": {}
+      },
+      "id": "alert-email",
+      "name": "Send Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 400],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "cron-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-rates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-rates": {
+      "main": [
+        [
+          {
+            "node": "process-rates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-rates": {
+      "main": [
+        [
+          {
+            "node": "update-database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update-database": {
+      "main": [
+        [
+          {
+            "node": "slack-notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "check-changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-changes": {
+      "main": [
+        [
+          {
+            "node": "if-significant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-significant": {
+      "main": [
+        [
+          {
+            "node": "alert-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "daily_exchange_rate",
+  "meta": {
+    "instanceId": "fastenmind"
+  },
+  "tags": ["finance", "scheduled"]
+}

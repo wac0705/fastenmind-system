@@ -1,0 +1,32 @@
+{
+  "name": "fastenmind-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for FastenMind system",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:chrome": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:safari": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:auth": "playwright test auth.spec.ts",
+    "test:quotes": "playwright test quotes.spec.ts",
+    "test:ci": "playwright test --reporter=github",
+    "report": "playwright show-report",
+    "report:open": "playwright show-report --host 0.0.0.0 --port 9323",
+    "install": "playwright install",
+    "install:deps": "playwright install-deps",
+    "codegen": "playwright codegen localhost:3000"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

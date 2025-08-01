@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: fastenmind_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fastenmind
+      POSTGRES_PASSWORD: fastenmind123
+      POSTGRES_DB: fastenmind_db
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+      - ./init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - fastenmind_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastenmind_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fastenmind_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fastenmind_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@fastenmind.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8081:80"
+    depends_on:
+      - postgres
+    networks:
+      - fastenmind_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  fastenmind_network:
+    driver: bridge

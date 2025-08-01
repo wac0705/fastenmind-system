@@ -1,0 +1,234 @@
+{
+  "name": "Cost Update Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "cronExpression": "0 9 1 * *"
+        }
+      },
+      "id": "monthly-trigger",
+      "name": "Monthly on 1st at 9 AM",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.API_URL}}/api/cost-calculations/outdated",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-outdated-costs",
+      "name": "Fetch Outdated Costs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Group costs by type\nconst costs = items[0].json.data || [];\n\nconst materialCosts = costs.filter(c => c.cost_type === 'material');\nconst processCosts = costs.filter(c => c.cost_type === 'process');\nconst overheadCosts = costs.filter(c => c.cost_type === 'overhead');\n\nreturn [{\n  json: {\n    total_outdated: costs.length,\n    material_costs: materialCosts,\n    process_costs: processCosts,\n    overhead_costs: overheadCosts,\n    has_outdated: costs.length > 0\n  }\n}];"
+      },
+      "id": "group-costs",
+      "name": "Group Costs by Type",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.has_outdated}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-has-outdated",
+      "name": "IF Has Outdated Costs",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create notification messages for each department\nconst data = items[0].json;\nconst notifications = [];\n\nif (data.material_costs.length > 0) {\n  notifications.push({\n    json: {\n      department: 'materials',\n      email: 'materials@fastenmind.com',\n      costs: data.material_costs,\n      count: data.material_costs.length,\n      subject: `${data.material_costs.length} 個材料成本需要更新`\n    }\n  });\n}\n\nif (data.process_costs.length > 0) {\n  notifications.push({\n    json: {\n      department: 'engineering',\n      email: 'engineering@fastenmind.com',\n      costs: data.process_costs,\n      count: data.process_costs.length,\n      subject: `${data.process_costs.length} 個製程成本需要更新`\n    }\n  });\n}\n\nif (data.overhead_costs.length > 0) {\n  notifications.push({\n    json: {\n      department: 'finance',\n      email: 'finance@fastenmind.com',\n      costs: data.overhead_costs,\n      count: data.overhead_costs.length,\n      subject: `${data.overhead_costs.length} 個管理成本需要更新`\n    }\n  });\n}\n\nreturn notifications;"
+      },
+      "id": "prepare-notifications",
+      "name": "Prepare Department Notifications",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "={{$json.email}}",
+        "subject": "📊 成本更新提醒: {{$json.subject}}",
+        "text": "您好，\n\n系統偵測到以下成本資料已超過30天未更新，請盡快檢視並更新：\n\n{{$json.costs.map(c => `- ${c.name}: 最後更新 ${c.last_updated}`).join('\\n')}}\n\n請登入系統進行更新：{{$env.APP_URL}}/cost-management\n\n此為系統自動通知，請勿回覆。",
+        "html": "<h2>成本更新提醒</h2><p>您好，</p><p>系統偵測到以下成本資料已超過30天未更新，請盡快檢視並更新：</p><ul>{{$json.costs.map(c => `<li><strong>${c.name}</strong>: 最後更新 ${c.last_updated}</li>`).join('')}}</ul><p><a href='{{$env.APP_URL}}/cost-management' style='background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 15px;'>立即更新</a></p><hr><p style='color: #666; font-size: 12px;'>此為系統自動通知，請勿回覆。</p>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_URL}}/api/notifications/bulk",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "notifications",
+              "value": "={{$json.costs.map(c => ({ user_id: c.responsible_user_id, type: 'cost_update_required', title: `成本更新提醒: ${c.name}`, message: `${c.name} 已超過30天未更新`, entity_type: 'cost', entity_id: c.id }))}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notifications",
+      "name": "Create In-App Notifications",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1250, 450]
+    },
+    {
+      "parameters": {
+        "channel": "#operations",
+        "text": ":warning: 成本更新提醒\n\n本月共有 {{$json.total_outdated}} 個成本項目需要更新：\n\n• 材料成本: {{$json.material_costs.length}} 項\n• 製程成本: {{$json.process_costs.length}} 項\n• 管理成本: {{$json.overhead_costs.length}} 項\n\n相關部門主管已收到郵件通知。",
+        "options": {
+          "attachments": {
+            "values": [
+              {
+                "color": "#ff6b6b",
+                "title": "需要立即處理",
+                "title_link": "{{$env.APP_URL}}/cost-management",
+                "text": "請各部門主管督促團隊在本週內完成更新"
+              }
+            ]
+          }
+        }
+      },
+      "id": "slack-summary",
+      "name": "Slack Summary",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1050, 500],
+      "credentials": {
+        "slackApi": {
+          "id": "2",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "monthly-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-outdated-costs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-outdated-costs": {
+      "main": [
+        [
+          {
+            "node": "group-costs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "group-costs": {
+      "main": [
+        [
+          {
+            "node": "if-has-outdated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-has-outdated": {
+      "main": [
+        [
+          {
+            "node": "prepare-notifications",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "slack-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-notifications": {
+      "main": [
+        [
+          {
+            "node": "send-email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "create-notifications",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "cost_update_reminder",
+  "meta": {
+    "instanceId": "fastenmind"
+  },
+  "tags": ["cost", "scheduled", "reminder"]
+}

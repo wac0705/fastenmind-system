@@ -1,0 +1,317 @@
+{
+  "name": "Approval Notification Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "approval-notification",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Approval Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "approval-notification-webhook"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract and validate webhook data\nconst data = items[0].json;\n\nif (!data.event_type || !data.entity_type || !data.entity_id) {\n  throw new Error('Missing required fields');\n}\n\n// Determine notification type and recipients\nlet notificationType, recipients, message, priority;\n\nswitch (data.event_type) {\n  case 'quote.submitted_for_approval':\n    notificationType = 'approval_required';\n    recipients = data.data.approvers || [];\n    message = `報價單 ${data.data.quote_no} 需要您的審核`;\n    priority = 'high';\n    break;\n    \n  case 'quote.approved':\n    notificationType = 'approved';\n    recipients = [data.data.created_by];\n    message = `您的報價單 ${data.data.quote_no} 已被核准`;\n    priority = 'medium';\n    break;\n    \n  case 'quote.rejected':\n    notificationType = 'rejected';\n    recipients = [data.data.created_by];\n    message = `您的報價單 ${data.data.quote_no} 已被拒絕: ${data.data.reason}`;\n    priority = 'high';\n    break;\n    \n  default:\n    throw new Error('Unknown event type: ' + data.event_type);\n}\n\nreturn [{\n  json: {\n    ...data,\n    notification_type: notificationType,\n    recipients: recipients,\n    message: message,\n    priority: priority,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "process-event",
+      "name": "Process Approval Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Split into individual notifications for each recipient\nconst event = items[0].json;\nconst notifications = [];\n\nfor (const recipientId of event.recipients) {\n  notifications.push({\n    json: {\n      user_id: recipientId,\n      type: event.notification_type,\n      title: event.message,\n      entity_type: event.entity_type,\n      entity_id: event.entity_id,\n      priority: event.priority,\n      data: event.data,\n      timestamp: event.timestamp\n    }\n  });\n}\n\nreturn notifications;"
+      },
+      "id": "split-recipients",
+      "name": "Split Recipients",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.API_URL}}/api/users/{{$json.user_id}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-user",
+      "name": "Fetch User Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.API_URL}}/api/notifications",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{$json.user_id}}"
+            },
+            {
+              "name": "type",
+              "value": "={{$json.type}}"
+            },
+            {
+              "name": "title",
+              "value": "={{$json.title}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.data.details || $json.title}}"
+            },
+            {
+              "name": "entity_type",
+              "value": "={{$json.entity_type}}"
+            },
+            {
+              "name": "entity_id",
+              "value": "={{$json.entity_id}}"
+            },
+            {
+              "name": "priority",
+              "value": "={{$json.priority}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.API_TOKEN}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notification",
+      "name": "Create In-App Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@fastenmind.com",
+        "toEmail": "={{$json.user.email}}",
+        "subject": "{{$json.priority === 'high' ? '🔴' : '🟡'}} {{$json.title}}",
+        "text": "您好 {{$json.user.name}}，\n\n{{$json.title}}\n\n{{$json.data.details || ''}}\n\n請登入系統查看詳情：{{$env.APP_URL}}/{{$json.entity_type}}s/{{$json.entity_id}}\n\n此為系統自動通知。",
+        "html": "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'><h2 style='color: #1e40af;'>{{$json.title}}</h2><p>您好 {{$json.user.name}}，</p><p style='font-size: 16px; line-height: 1.5;'>{{$json.data.details || $json.title}}</p>{{$json.data.items ? \"<h3>詳細資訊：</h3><ul>\" + $json.data.items.map(item => \"<li>\" + item + \"</li>\").join(\"\") + \"</ul>\" : \"\"}}<div style='margin: 30px 0;'><a href='{{$env.APP_URL}}/{{$json.entity_type}}s/{{$json.entity_id}}' style='background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;'>查看詳情</a></div><hr style='border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;'><p style='color: #6b7280; font-size: 12px;'>此為系統自動通知，請勿回覆。</p></div>",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 350],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.priority}}",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "id": "if-high-priority",
+      "name": "IF High Priority",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {
+        "channel": "#approvals",
+        "text": ":rotating_light: 緊急審核通知",
+        "options": {
+          "attachments": {
+            "values": [
+              {
+                "color": "#dc2626",
+                "title": "{{$json.title}}",
+                "title_link": "{{$env.APP_URL}}/{{$json.entity_type}}s/{{$json.entity_id}}",
+                "fields": {
+                  "values": [
+                    {
+                      "short": true,
+                      "title": "審核人",
+                      "value": "{{$json.user.name}}"
+                    },
+                    {
+                      "short": true,
+                      "title": "類型",
+                      "value": "{{$json.entity_type === 'quote' ? '報價單' : '其他'}}"
+                    }
+                  ]
+                },
+                "footer": "FastenMind Approval System",
+                "ts": "={{Math.floor(Date.now() / 1000)}}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "slack-urgent",
+      "name": "Slack Urgent Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1250, 500],
+      "credentials": {
+        "slackApi": {
+          "id": "2",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log the notification event\nconst event = items[0].json;\n\nconsole.log('Approval notification sent:', {\n  type: event.notification_type,\n  recipient: event.user.email,\n  entity: `${event.entity_type}:${event.entity_id}`,\n  timestamp: event.timestamp\n});\n\nreturn [{\n  json: {\n    success: true,\n    notification_id: event.notification_id,\n    sent_to: event.user.email,\n    channels: ['in-app', 'email', event.priority === 'high' ? 'slack' : null].filter(Boolean)\n  }\n}];"
+      },
+      "id": "log-result",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "process-event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-event": {
+      "main": [
+        [
+          {
+            "node": "split-recipients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split-recipients": {
+      "main": [
+        [
+          {
+            "node": "fetch-user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-user": {
+      "main": [
+        [
+          {
+            "node": "create-notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "send-email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if-high-priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-high-priority": {
+      "main": [
+        [
+          {
+            "node": "slack-urgent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create-notification": {
+      "main": [
+        [
+          {
+            "node": "log-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email": {
+      "main": [
+        [
+          {
+            "node": "log-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "slack-urgent": {
+      "main": [
+        [
+          {
+            "node": "log-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1",
+  "id": "approval_notification",
+  "meta": {
+    "instanceId": "fastenmind"
+  },
+  "tags": ["approval", "notification", "webhook"]
+}
