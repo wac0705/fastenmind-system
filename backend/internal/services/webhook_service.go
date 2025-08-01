@@ -56,3 +56,10 @@ func (s *WebhookService) NotifyQuoteCreated(webhookURL string, quoteID string) e
 	}
 	return s.SendWebhook(webhookURL, payload)
 }
+
+func (s *WebhookService) TriggerQuoteCreated(quoteID string) error {
+	// In a real implementation, you would get webhook URLs from configuration
+	// For now, we'll just log the event
+	fmt.Printf("Quote created event triggered for quote ID: %s\n", quoteID)
+	return nil
+}

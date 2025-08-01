@@ -13,7 +13,7 @@ type InquiryService interface{}
 type ProcessService interface{}
 type EquipmentService interface{}
 type AssignmentRuleService interface{}
-type TariffService interface{}
+// TariffService is defined in tariff_service.go
 type ComplianceService interface{}
 
 // Placeholder constructors
@@ -30,5 +30,5 @@ func NewEquipmentService(repo repository.EquipmentRepository) EquipmentService {
 func NewAssignmentRuleService(repo repository.AssignmentRuleRepository) AssignmentRuleService {
 	return nil
 }
-func NewTariffService(repo repository.TariffRepository) TariffService { return nil }
+// NewTariffService is defined in tariff_service.go
 func NewComplianceService(repo repository.ComplianceRepository) ComplianceService { return nil }

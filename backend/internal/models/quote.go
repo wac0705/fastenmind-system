@@ -35,10 +35,19 @@ type Quote struct {
 	Currency         string     `gorm:"default:'USD'" json:"currency"`
 	
 	// Terms
-	ValidUntil       string     `json:"valid_until"`
+	ValidUntil       time.Time  `json:"valid_until"`
+	ValidityDays     int        `json:"validity_days"`
 	DeliveryDays     int        `json:"delivery_days"`
+	DeliveryTerms    string     `json:"delivery_terms"`
 	PaymentTerms     string     `json:"payment_terms"`
+	Remarks          *string    `json:"remarks,omitempty"`
 	Notes            string     `json:"notes,omitempty"`
+	
+	// Additional fields
+	CreatedBy        uuid.UUID  `gorm:"type:uuid" json:"created_by"`
+	TemplateID       *uuid.UUID `gorm:"type:uuid" json:"template_id,omitempty"`
+	CurrentVersionID *uuid.UUID `gorm:"type:uuid" json:"current_version_id,omitempty"`
+	TotalAmount      float64    `json:"total_amount"`
 	
 	// Workflow fields
 	SubmittedAt      *time.Time `json:"submitted_at,omitempty"`

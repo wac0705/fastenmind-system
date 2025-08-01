@@ -355,13 +355,13 @@ type ReportDashboardData struct {
 	TotalDashboards      int                    `json:"total_dashboards"`
 	TotalDataSources     int                    `json:"total_data_sources"`
 	TotalKPIs            int                    `json:"total_kpis"`
-	ScheduledReports     int                    `json:"scheduled_reports"`
+	ScheduledReportsCount int                    `json:"scheduled_reports"`
 	ActiveSubscriptions  int                    `json:"active_subscriptions"`
 	ReportsByCategory    []CategoryCount        `json:"reports_by_category"`
 	ExecutionsByStatus   []StatusCount          `json:"executions_by_status"`
 	PopularReports       []models.Report        `json:"popular_reports"`
 	RecentExecutions     []models.ReportExecution `json:"recent_executions"`
-	ScheduledReports     []models.ReportSchedule  `json:"scheduled_reports_list"`
+	ScheduledReportsList []models.ReportSchedule  `json:"scheduled_reports_list"`
 	SystemHealth         map[string]interface{} `json:"system_health"`
 }
 
