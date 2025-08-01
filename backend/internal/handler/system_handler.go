@@ -329,7 +329,7 @@ func (h *SystemHandler) InvalidateAllUserSessions(c echo.Context) error {
 
 // Audit Log endpoints
 func (h *SystemHandler) ListAuditLogs(c echo.Context) error {
-	companyID := *getCompanyIDFromContext(c)
+	companyID := getCompanyIDFromContext(c)
 	params := getListParams(c)
 
 	logs, total, err := h.systemService.ListAuditLogs(c.Request().Context(), companyID, params)

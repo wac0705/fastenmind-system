@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/service"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -121,9 +120,10 @@ func (h *TariffHandler) CalculateTariff(c echo.Context) error {
 	}
 	
 	// Get user context
-	userClaims := c.Get("user").(*middleware.Claims)
-	req.CompanyID = userClaims.CompanyID
-	req.UserID = userClaims.UserID
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
+	req.CompanyID = companyID
+	req.UserID = userID
 	
 	result, err := h.service.CalculateTariff(req)
 	if err != nil {
@@ -152,12 +152,13 @@ func (h *TariffHandler) BatchCalculateTariff(c echo.Context) error {
 	}
 	
 	// Get user context
-	userClaims := c.Get("user").(*middleware.Claims)
+	companyID := getCompanyIDFromContext(c)
+	userID := getUserIDFromContext(c)
 	
 	// Set user context for each item
 	for i := range reqBody.Items {
-		reqBody.Items[i].CompanyID = userClaims.CompanyID
-		reqBody.Items[i].UserID = userClaims.UserID
+		reqBody.Items[i].CompanyID = companyID
+		reqBody.Items[i].UserID = userID
 	}
 	
 	results, err := h.service.BatchCalculateTariff(reqBody.Items)
