@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"fastenmind-system/internal/models"
+	"github.com/fastenmind/fastener-api/internal/models"
 )
 
 type IntegrationRepository struct {
