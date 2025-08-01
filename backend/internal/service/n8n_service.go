@@ -425,7 +425,7 @@ func (s *n8nService) RegisterWebhook(companyID uuid.UUID, req RegisterWebhookReq
 		WorkflowID: req.WorkflowID,
 		EventTypes: req.EventTypes,
 		TargetURL:  req.TargetURL,
-		Headers:    models.JSONB(req.Headers),
+		Headers:    models.ConvertMapToJSONB(req.Headers),
 		IsActive:   true,
 	}
 	
@@ -452,7 +452,7 @@ func (s *n8nService) UpdateWebhook(id uuid.UUID, req UpdateWebhookRequest) (*mod
 		webhook.TargetURL = req.TargetURL
 	}
 	if req.Headers != nil {
-		webhook.Headers = models.JSONB(req.Headers)
+		webhook.Headers = models.ConvertMapToJSONB(req.Headers)
 	}
 	if req.IsActive != nil {
 		webhook.IsActive = *req.IsActive

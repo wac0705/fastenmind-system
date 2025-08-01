@@ -51,7 +51,7 @@ func (s *QuoteManagementService) CreateQuote(req models.CreateQuoteRequest, crea
 		ValidityDays:  req.ValidityDays,
 		PaymentTerms:  req.PaymentTerms,
 		DeliveryTerms: req.DeliveryTerms,
-		Remarks:       req.Remarks,
+		Remarks:       &req.Remarks,
 		CreatedBy:     createdBy,
 		TemplateID:    req.TemplateID,
 	}
@@ -166,7 +166,7 @@ func (s *QuoteManagementService) CreateQuote(req models.CreateQuoteRequest, crea
 
 	// Trigger webhook for quote created
 	if s.webhookService != nil {
-		go s.webhookService.TriggerQuoteCreated(fullQuote, fullQuote.CompanyID, createdBy)
+		go s.webhookService.TriggerQuoteCreated(fullQuote.ID.String())
 	}
 
 	return fullQuote, nil
@@ -238,8 +238,8 @@ func (s *QuoteManagementService) UpdateQuote(quoteID uuid.UUID, req models.Updat
 	quote.ValidityDays = req.ValidityDays
 	quote.PaymentTerms = req.PaymentTerms
 	quote.DeliveryTerms = req.DeliveryTerms
-	quote.Remarks = req.Remarks
-	quote.UpdatedBy = &updatedBy
+	quote.Remarks = &req.Remarks
+	quote.UpdatedAt = time.Now()
 
 	if req.ValidityDays > 0 {
 		validUntil := time.Now().AddDate(0, 0, req.ValidityDays)

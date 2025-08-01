@@ -9,6 +9,7 @@ import (
 // UserRepository handles user-related data operations
 type UserRepository interface {
 	GetUserByID(id uuid.UUID) (*model.Account, error)
+	GetUser(id uuid.UUID) (*model.Account, error)  // Alias for GetUserByID
 	GetUserByEmail(email string) (*model.Account, error)
 	CreateUser(user *model.Account) error
 	UpdateUser(user *model.Account) error
@@ -34,6 +35,10 @@ func (r *userRepository) GetUserByID(id uuid.UUID) (*model.Account, error) {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *userRepository) GetUser(id uuid.UUID) (*model.Account, error) {
+	return r.GetUserByID(id)
 }
 
 func (r *userRepository) GetUserByEmail(email string) (*model.Account, error) {

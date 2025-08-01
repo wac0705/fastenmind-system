@@ -45,9 +45,13 @@ type Quote struct {
 	
 	// Additional fields
 	CreatedBy        uuid.UUID  `gorm:"type:uuid" json:"created_by"`
+	UpdatedBy        *uuid.UUID `gorm:"type:uuid" json:"updated_by,omitempty"`
 	TemplateID       *uuid.UUID `gorm:"type:uuid" json:"template_id,omitempty"`
 	CurrentVersionID *uuid.UUID `gorm:"type:uuid" json:"current_version_id,omitempty"`
 	TotalAmount      float64    `json:"total_amount"`
+	ApprovalStatus   string     `json:"approval_status"`
+	ApprovedBy       *uuid.UUID `gorm:"type:uuid" json:"approved_by,omitempty"`
+	ApprovedAt       *time.Time `json:"approved_at,omitempty"`
 	
 	// Workflow fields
 	SubmittedAt      *time.Time `json:"submitted_at,omitempty"`

@@ -9,8 +9,10 @@ import (
 type OrderRepository interface {
 	Create(order *models.Order) error
 	Update(order *models.Order) error
+	UpdateOrder(order *models.Order) error  // Alias for Update
 	Delete(id uuid.UUID) error
 	Get(id uuid.UUID) (*models.Order, error)
+	GetOrder(id uuid.UUID) (*models.Order, error)  // Alias for Get
 	GetWithDetails(id uuid.UUID) (*models.Order, error)
 	List(companyID uuid.UUID, params map[string]interface{}) ([]models.Order, int64, error)
 	GetByOrderNo(orderNo string) (*models.Order, error)
@@ -20,6 +22,7 @@ type OrderRepository interface {
 	UpdateItem(item *models.OrderItem) error
 	DeleteItem(id uuid.UUID) error
 	GetItems(orderID uuid.UUID) ([]models.OrderItem, error)
+	GetOrderItems(orderID uuid.UUID) ([]models.OrderItem, error)  // Alias for GetItems
 	
 	// Activity log
 	LogActivity(activity *models.OrderActivity) error
@@ -51,6 +54,10 @@ func (r *orderRepository) Update(order *models.Order) error {
 	return r.db.Save(order).Error
 }
 
+func (r *orderRepository) UpdateOrder(order *models.Order) error {
+	return r.Update(order)
+}
+
 func (r *orderRepository) Delete(id uuid.UUID) error {
 	return r.db.Delete(&models.Order{}, id).Error
 }
@@ -61,6 +68,10 @@ func (r *orderRepository) Get(id uuid.UUID) (*models.Order, error) {
 		return nil, err
 	}
 	return &order, nil
+}
+
+func (r *orderRepository) GetOrder(id uuid.UUID) (*models.Order, error) {
+	return r.Get(id)
 }
 
 func (r *orderRepository) GetWithDetails(id uuid.UUID) (*models.Order, error) {
@@ -176,6 +187,10 @@ func (r *orderRepository) GetItems(orderID uuid.UUID) ([]models.OrderItem, error
 	var items []models.OrderItem
 	err := r.db.Where("order_id = ?", orderID).Find(&items).Error
 	return items, err
+}
+
+func (r *orderRepository) GetOrderItems(orderID uuid.UUID) ([]models.OrderItem, error) {
+	return r.GetItems(orderID)
 }
 
 // Activity log
