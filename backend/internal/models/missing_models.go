@@ -64,35 +64,9 @@ type N8NFieldMapping struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// Cost Calculation Models
-type CostCalculation struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ProductName     string     `json:"product_name"`
-	ProductSpecs    string     `json:"product_specs"`
-	Quantity        int        `json:"quantity"`
-	MaterialCost    float64    `json:"material_cost"`
-	ProcessingCost  float64    `json:"processing_cost"`
-	OverheadCost    float64    `json:"overhead_cost"`
-	TotalCost       float64    `json:"total_cost"`
-	CalculatedAt    time.Time  `json:"calculated_at"`
-	CalculatedBy    uuid.UUID  `json:"calculated_by"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// Cost Calculation Models (CostCalculation is already defined in process_cost.go)
 
-// Order Models
-type OrderItem struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	OrderID         uuid.UUID  `json:"order_id"`
-	ProductName     string     `json:"product_name"`
-	ProductSpecs    string     `json:"product_specs"`
-	Quantity        int        `json:"quantity"`
-	UnitPrice       float64    `json:"unit_price"`
-	TotalPrice      float64    `json:"total_price"`
-	Status          string     `json:"status"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// Order Models (OrderItem is already defined in order.go)
 
 type ProductionSchedule struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
@@ -143,27 +117,9 @@ type TradeShipment struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-type ShipmentEvent struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ShipmentID      uuid.UUID  `json:"shipment_id"`
-	EventType       string     `json:"event_type"`
-	EventDate       time.Time  `json:"event_date"`
-	Location        string     `json:"location"`
-	Description     string     `json:"description"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// ShipmentEvent is already defined in trade.go
 
-type TradeDocument struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	DocumentType    string     `json:"document_type"`
-	DocumentNo      string     `json:"document_no"`
-	ShipmentID      uuid.UUID  `json:"shipment_id"`
-	FilePath        string     `json:"file_path"`
-	Status          string     `json:"status"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// TradeDocument is already defined in trade.go
 
 type LetterOfCredit struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
@@ -211,86 +167,50 @@ type ExchangeRate struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// Advanced Models (these are already defined in advanced.go, removing duplicates)
-// The following models are already defined in advanced.go:
-// - AIAssistant
-// - AIConversation (defined in advanced.go)
-// - AIMessage
-// - Recommendation (defined in advanced.go)
-// - AdvancedSearch
-// - BatchOperation
-// - CustomField
-// - CustomFieldValue
-// - SecurityEvent
-// - PerformanceMetric
-// - PerformanceStats
-// - BackupRecord
-// - SystemLanguage
+// Advanced Models - only define missing ones
+// Note: Most advanced models are already defined in advanced.go
+
+// AIConversation is not defined in advanced.go
+type AIConversation struct {
+	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	SessionID       string     `json:"session_id"`
+	AssistantID     uuid.UUID  `json:"assistant_id"`
+	UserID          uuid.UUID  `json:"user_id"`
+	StartedAt       time.Time  `json:"started_at"`
+	EndedAt         *time.Time `json:"ended_at"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// Recommendation is not defined in advanced.go
+type Recommendation struct {
+	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	UserID          uuid.UUID  `json:"user_id"`
+	Type            string     `json:"type"`
+	Title           string     `json:"title"`
+	Description     string     `json:"description"`
+	ActionData      JSONB      `json:"action_data" gorm:"type:jsonb"`
+	Status          string     `json:"status"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// PerformanceStats is not defined in advanced.go
+type PerformanceStats struct {
+	ServiceName      string    `json:"service_name"`
+	TotalRequests    int       `json:"total_requests"`
+	SuccessfulRequests int     `json:"successful_requests"`
+	FailedRequests   int       `json:"failed_requests"`
+	AverageDuration  float64   `json:"average_duration"`
+	MinDuration      int       `json:"min_duration"`
+	MaxDuration      int       `json:"max_duration"`
+}
 
 // Integration Models
-type IntegrationMapping struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	IntegrationID   uuid.UUID  `json:"integration_id"`
-	SourceField     string     `json:"source_field"`
-	TargetField     string     `json:"target_field"`
-	TransformRule   string     `json:"transform_rule"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type WebhookDelivery struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	WebhookID       uuid.UUID  `json:"webhook_id"`
-	Payload         JSONB      `json:"payload" gorm:"type:jsonb"`
-	ResponseStatus  int        `json:"response_status"`
-	ResponseBody    string     `json:"response_body"`
-	DeliveredAt     time.Time  `json:"delivered_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-}
-
-type DataSyncJob struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	IntegrationID   uuid.UUID  `json:"integration_id"`
-	JobType         string     `json:"job_type"`
-	Status          string     `json:"status"`
-	StartedAt       *time.Time `json:"started_at"`
-	CompletedAt     *time.Time `json:"completed_at"`
-	RecordsProcessed int       `json:"records_processed"`
-	ErrorMessage    *string    `json:"error_message"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type ApiKey struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Name            string     `json:"name"`
-	KeyHash         string     `json:"key_hash"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	Permissions     JSONB      `json:"permissions" gorm:"type:jsonb"`
-	ExpiresAt       *time.Time `json:"expires_at"`
-	LastUsedAt      *time.Time `json:"last_used_at"`
-	IsActive        bool       `json:"is_active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type ExternalSystem struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	SystemName      string     `json:"system_name"`
-	SystemType      string     `json:"system_type"`
-	ConnectionConfig JSONB     `json:"connection_config" gorm:"type:jsonb"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	IsActive        bool       `json:"is_active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type IntegrationTemplate struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	TemplateName    string     `json:"template_name"`
-	IntegrationType string     `json:"integration_type"`
-	Configuration   JSONB      `json:"configuration" gorm:"type:jsonb"`
-	IsPublic        bool       `json:"is_public"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// The following models are already defined in integration.go:
+// - IntegrationMapping
+// - WebhookDelivery
+// - DataSyncJob
+// - ApiKey
+// - ExternalSystem
+// - IntegrationTemplate
