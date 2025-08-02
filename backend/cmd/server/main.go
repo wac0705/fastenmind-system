@@ -33,12 +33,12 @@ func main() {
 	// Initialize logger
 	log := logger.New(cfg.Server.Environment)
 
-	// Initialize database
-	db, err := database.New(cfg.Database)
+	// Initialize database wrapper
+	dbWrapper, err := database.NewWrapper(cfg.Database)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
-	defer db.Close()
+	defer dbWrapper.Close()
 
 	// Initialize Echo
 	e := echo.New()
@@ -53,7 +53,7 @@ func main() {
 	e.Use(middleware.Security())
 
 	// Initialize repositories
-	repos := repository.NewRepositories(db)
+	repos := repository.NewRepositories(dbWrapper.GormDB)
 
 	// Initialize services
 	services := service.NewServices(repos, cfg)

@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/fastenmind/fastener-api/pkg/database"
+import "gorm.io/gorm"
 
 // Repositories holds all repository instances
 type Repositories struct {
@@ -23,23 +23,23 @@ type Repositories struct {
 }
 
 // NewRepositories creates new repository instances
-func NewRepositories(db *database.DB) *Repositories {
+func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
-		Account:        NewAccountRepository(db),
-		Company:        NewCompanyRepository(db),
-		Customer:       NewCustomerRepository(db),
-		Inquiry:        NewInquiryRepository(db),
-		Process:        NewProcessRepository(db),
-		Equipment:      NewEquipmentRepository(db),
-		AssignmentRule: NewAssignmentRuleRepository(db),
+		Account:        NewAccountRepositoryGorm(db),
+		Company:        NewCompanyRepositoryGorm(db),
+		Customer:       NewCustomerRepositoryGorm(db),
+		Inquiry:        NewInquiryRepositoryGorm(db),
+		Process:        NewProcessRepositoryGorm(db),
+		Equipment:      NewEquipmentRepositoryGorm(db),
+		AssignmentRule: NewAssignmentRuleRepositoryGorm(db),
 		Tariff:         NewTariffRepository(db),
-		Compliance:     NewComplianceRepository(db),
-		N8N:            NewN8NRepository(db),
-		Quote:          NewQuoteRepository(db),
-		Order:          NewOrderRepository(db),
-		Inventory:      NewInventoryRepository(db),
-		Trade:          NewTradeRepository(db),
-		Advanced:       NewAdvancedRepository(db),
-		Integration:    NewIntegrationRepository(db),
+		Compliance:     NewComplianceRepositoryGorm(db),
+		N8N:            NewN8NRepositoryGorm(db),
+		Quote:          NewQuoteRepositoryGorm(db),
+		Order:          NewOrderRepositoryGorm(db),
+		Inventory:      NewInventoryRepositoryGorm(db),
+		Trade:          NewTradeRepositoryGorm(db),
+		Advanced:       NewAdvancedRepositoryGorm(db),
+		Integration:    NewIntegrationRepositoryGorm(db),
 	}
 }
