@@ -96,7 +96,7 @@ export function usePWA() {
                   toast(
                     (t) => (
                       <div>
-                        <p>新版本已就緒</p>
+                        <p>New version available</p>
                         <button
                           className="ml-2 bg-blue-500 text-white px-3 py-1 rounded"
                           onClick={() => {
@@ -105,7 +105,7 @@ export function usePWA() {
                             toast.dismiss(t.id);
                           }}
                         >
-                          更新
+                          Update
                         </button>
                       </div>
                     ),
