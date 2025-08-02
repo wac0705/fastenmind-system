@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fastenmind/fastener-api/internal/model"
 	"github.com/google/uuid"

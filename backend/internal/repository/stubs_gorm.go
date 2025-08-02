@@ -114,23 +114,23 @@ func (r *complianceRepositoryGorm) GetDocumentRequirements(productType, exportCo
 func (r *complianceRepositoryGorm) CreateCheckResult(result *models.ComplianceCheckResult) error { return ErrNotImplemented }
 func (r *complianceRepositoryGorm) GetCheckHistory(inquiryID uuid.UUID) ([]models.ComplianceCheckResult, error) { return nil, ErrNotImplemented }
 
-// Account Repository
-type accountRepositoryGorm struct{ db *gorm.DB }
-func NewAccountRepositoryGorm(db *gorm.DB) AccountRepository { return &accountRepositoryGorm{db: db} }
-func (r *accountRepositoryGorm) Create(ctx context.Context, account *model.Account) error { return ErrNotImplemented }
-func (r *accountRepositoryGorm) GetByID(ctx context.Context, id uuid.UUID) (*model.Account, error) { return nil, ErrNotImplemented }
-func (r *accountRepositoryGorm) GetByEmail(ctx context.Context, email string) (*model.Account, error) { return nil, ErrNotImplemented }
-func (r *accountRepositoryGorm) Update(ctx context.Context, account *model.Account) error { return ErrNotImplemented }
-func (r *accountRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error { return ErrNotImplemented }
-func (r *accountRepositoryGorm) List(ctx context.Context, companyID uuid.UUID) ([]*model.Account, error) { return nil, ErrNotImplemented }
+// Account Repository is implemented in account_repository_gorm.go
 
 // Tariff Repository
 type tariffRepositoryGorm struct{ db *gorm.DB }
-func NewTariffRepository(db *gorm.DB) TariffRepository { return &tariffRepositoryGorm{db: db} }
-func (r *tariffRepositoryGorm) Create(ctx context.Context, tariff interface{}) error { return ErrNotImplemented }
-func (r *tariffRepositoryGorm) GetByID(ctx context.Context, id uuid.UUID) (interface{}, error) { return nil, ErrNotImplemented }
-func (r *tariffRepositoryGorm) Update(ctx context.Context, tariff interface{}) error { return ErrNotImplemented }
-func (r *tariffRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error { return ErrNotImplemented }
+func NewTariffRepositoryGorm(db *gorm.DB) TariffRepository { return &tariffRepositoryGorm{db: db} }
+func (r *tariffRepositoryGorm) FindHSCodes(params map[string]interface{}) ([]models.HSCode, int64, error) { return nil, 0, ErrNotImplemented }
+func (r *tariffRepositoryGorm) GetHSCode(code string) (*models.HSCode, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) CreateHSCode(hsCode *models.HSCode) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) UpdateHSCode(hsCode *models.HSCode) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) FindTariffRates(hsCode, fromCountry, toCountry string) ([]models.TariffRate, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) GetTariffRate(id uuid.UUID) (*models.TariffRate, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) CreateTariffRate(rate *models.TariffRate) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) UpdateTariffRate(rate *models.TariffRate) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) GetEffectiveTariffRate(hsCode, fromCountry, toCountry string, date time.Time) (*models.TariffRate, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) FindTradeAgreements(countries []string) ([]models.TradeAgreement, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) CreateCalculation(calc *models.TariffCalculation) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) GetCalculationHistory(companyID uuid.UUID, limit int) ([]models.TariffCalculation, error) { return nil, ErrNotImplemented }
 
 // N8N Repository
 type n8nRepositoryGorm struct{ db *gorm.DB }
@@ -151,7 +151,7 @@ func (r *n8nRepositoryGorm) GetWebhookByPath(path string) (*models.N8NWebhook, e
 func (r *n8nRepositoryGorm) CreateExecution(execution *models.N8NExecution) error { return ErrNotImplemented }
 func (r *n8nRepositoryGorm) UpdateExecution(execution *models.N8NExecution) error { return ErrNotImplemented }
 func (r *n8nRepositoryGorm) GetExecutionByID(id uuid.UUID) (*models.N8NExecution, error) { return nil, ErrNotImplemented }
-func (r *n8nRepositoryGorm) ListExecutions(workflowID uuid.UUID, limit int) ([]models.N8NExecution, error) { return nil, ErrNotImplemented }
+// ListExecutions is implemented in stubs_missing.go with correct signature
 func (r *n8nRepositoryGorm) CreateMapping(mapping *models.N8NFieldMapping) error { return ErrNotImplemented }
 func (r *n8nRepositoryGorm) GetMappingsByWorkflow(workflowID uuid.UUID) ([]models.N8NFieldMapping, error) { return nil, ErrNotImplemented }
 func (r *n8nRepositoryGorm) CreateEventLog(log *models.N8NEventLog) error { return ErrNotImplemented }
