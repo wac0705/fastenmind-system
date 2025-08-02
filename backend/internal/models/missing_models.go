@@ -211,157 +211,21 @@ type ExchangeRate struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-// Advanced Models
-type AIAssistant struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Name            string     `json:"name"`
-	Type            string     `json:"type"`
-	Configuration   JSONB      `json:"configuration" gorm:"type:jsonb"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	IsActive        bool       `json:"is_active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type AIConversation struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	SessionID       string     `json:"session_id"`
-	AssistantID     uuid.UUID  `json:"assistant_id"`
-	UserID          uuid.UUID  `json:"user_id"`
-	StartedAt       time.Time  `json:"started_at"`
-	EndedAt         *time.Time `json:"ended_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type AIMessage struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ConversationID  uuid.UUID  `json:"conversation_id"`
-	Role            string     `json:"role"`
-	Content         string     `json:"content"`
-	Metadata        JSONB      `json:"metadata" gorm:"type:jsonb"`
-	CreatedAt       time.Time  `json:"created_at"`
-}
-
-type Recommendation struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	UserID          uuid.UUID  `json:"user_id"`
-	Type            string     `json:"type"`
-	Title           string     `json:"title"`
-	Description     string     `json:"description"`
-	ActionData      JSONB      `json:"action_data" gorm:"type:jsonb"`
-	Status          string     `json:"status"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type AdvancedSearch struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	Name            string     `json:"name"`
-	SearchType      string     `json:"search_type"`
-	Criteria        JSONB      `json:"criteria" gorm:"type:jsonb"`
-	UserID          uuid.UUID  `json:"user_id"`
-	IsSaved         bool       `json:"is_saved"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type BatchOperation struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	OperationType   string     `json:"operation_type"`
-	TotalItems      int        `json:"total_items"`
-	ProcessedItems  int        `json:"processed_items"`
-	Status          string     `json:"status"`
-	Parameters      JSONB      `json:"parameters" gorm:"type:jsonb"`
-	Result          JSONB      `json:"result" gorm:"type:jsonb"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	CreatedBy       uuid.UUID  `json:"created_by"`
-	StartedAt       time.Time  `json:"started_at"`
-	CompletedAt     *time.Time `json:"completed_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type CustomField struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	FieldName       string     `json:"field_name"`
-	FieldType       string     `json:"field_type"`
-	EntityType      string     `json:"entity_type"`
-	ValidationRules JSONB      `json:"validation_rules" gorm:"type:jsonb"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	IsRequired      bool       `json:"is_required"`
-	IsActive        bool       `json:"is_active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type CustomFieldValue struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	FieldID         uuid.UUID  `json:"field_id"`
-	ResourceType    string     `json:"resource_type"`
-	ResourceID      string     `json:"resource_id"`
-	Value           string     `json:"value"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type SecurityEvent struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	EventType       string     `json:"event_type"`
-	Severity        string     `json:"severity"`
-	UserID          *uuid.UUID `json:"user_id"`
-	IPAddress       string     `json:"ip_address"`
-	UserAgent       string     `json:"user_agent"`
-	Details         JSONB      `json:"details" gorm:"type:jsonb"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	OccurredAt      time.Time  `json:"occurred_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-}
-
-type PerformanceMetric struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	ServiceName     string     `json:"service_name"`
-	OperationName   string     `json:"operation_name"`
-	Duration        int        `json:"duration"`
-	Success         bool       `json:"success"`
-	ErrorMessage    *string    `json:"error_message"`
-	Metadata        JSONB      `json:"metadata" gorm:"type:jsonb"`
-	RecordedAt      time.Time  `json:"recorded_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-}
-
-type PerformanceStats struct {
-	ServiceName      string    `json:"service_name"`
-	TotalRequests    int       `json:"total_requests"`
-	SuccessfulRequests int     `json:"successful_requests"`
-	FailedRequests   int       `json:"failed_requests"`
-	AverageDuration  float64   `json:"average_duration"`
-	MinDuration      int       `json:"min_duration"`
-	MaxDuration      int       `json:"max_duration"`
-}
-
-type BackupRecord struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	BackupType      string     `json:"backup_type"`
-	BackupSize      int64      `json:"backup_size"`
-	BackupPath      string     `json:"backup_path"`
-	Status          string     `json:"status"`
-	CompanyID       uuid.UUID  `json:"company_id"`
-	CreatedBy       uuid.UUID  `json:"created_by"`
-	StartedAt       time.Time  `json:"started_at"`
-	CompletedAt     *time.Time `json:"completed_at"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type SystemLanguage struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	LanguageCode    string     `json:"language_code"`
-	LanguageName    string     `json:"language_name"`
-	IsActive        bool       `json:"is_active"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// Advanced Models (these are already defined in advanced.go, removing duplicates)
+// The following models are already defined in advanced.go:
+// - AIAssistant
+// - AIConversation (defined in advanced.go)
+// - AIMessage
+// - Recommendation (defined in advanced.go)
+// - AdvancedSearch
+// - BatchOperation
+// - CustomField
+// - CustomFieldValue
+// - SecurityEvent
+// - PerformanceMetric
+// - PerformanceStats
+// - BackupRecord
+// - SystemLanguage
 
 // Integration Models
 type IntegrationMapping struct {
