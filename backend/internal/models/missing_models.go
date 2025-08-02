@@ -64,6 +64,16 @@ type N8NFieldMapping struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
+type N8NEventLog struct {
+	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	WorkflowID      uuid.UUID  `json:"workflow_id"`
+	EventType       string     `json:"event_type"`
+	EventData       JSONB      `json:"event_data" gorm:"type:jsonb"`
+	Status          string     `json:"status"`
+	Message         string     `json:"message"`
+	CreatedAt       time.Time  `json:"created_at"`
+}
+
 // Cost Calculation Models (CostCalculation is already defined in process_cost.go)
 
 // Order Models (OrderItem is already defined in order.go)
@@ -121,28 +131,9 @@ type TradeShipment struct {
 
 // TradeDocument is already defined in trade.go
 
-type LetterOfCredit struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	LCNumber        string     `json:"lc_number"`
-	CustomerID      uuid.UUID  `json:"customer_id"`
-	Amount          float64    `json:"amount"`
-	Currency        string     `json:"currency"`
-	IssuedDate      time.Time  `json:"issued_date"`
-	ExpiryDate      time.Time  `json:"expiry_date"`
-	Status          string     `json:"status"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// LetterOfCredit is already defined in trade.go
 
-type LCUtilization struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	LCID            uuid.UUID  `json:"lc_id"`
-	OrderID         uuid.UUID  `json:"order_id"`
-	Amount          float64    `json:"amount"`
-	UtilizedDate    time.Time  `json:"utilized_date"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// LCUtilization is already defined in trade.go
 
 type TradeComplianceCheck struct {
 	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
@@ -156,16 +147,7 @@ type TradeComplianceCheck struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-type ExchangeRate struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	FromCurrency    string     `json:"from_currency"`
-	ToCurrency      string     `json:"to_currency"`
-	Rate            float64    `json:"rate"`
-	RateDate        time.Time  `json:"rate_date"`
-	Source          string     `json:"source"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+// ExchangeRate is already defined in trade.go
 
 // Advanced Models - only define missing ones
 // Note: Most advanced models are already defined in advanced.go

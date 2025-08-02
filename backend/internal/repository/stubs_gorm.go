@@ -76,15 +76,11 @@ func (r *customerRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error
 // Other repository stubs with minimal implementation
 type inquiryRepositoryGorm struct{ db *gorm.DB }
 func NewInquiryRepositoryGorm(db *gorm.DB) InquiryRepository { return &inquiryRepositoryGorm{db: db} }
-func (r *inquiryRepositoryGorm) Create(inquiry *models.Inquiry) error { return ErrNotImplemented }
-func (r *inquiryRepositoryGorm) GetByID(id uuid.UUID) (*models.Inquiry, error) { return nil, ErrNotImplemented }
-func (r *inquiryRepositoryGorm) Update(inquiry *models.Inquiry) error { return ErrNotImplemented }
+func (r *inquiryRepositoryGorm) Create(inquiry *model.Inquiry) error { return ErrNotImplemented }
+func (r *inquiryRepositoryGorm) Get(id uuid.UUID) (*model.Inquiry, error) { return nil, ErrNotImplemented }
+func (r *inquiryRepositoryGorm) Update(inquiry *model.Inquiry) error { return ErrNotImplemented }
 func (r *inquiryRepositoryGorm) Delete(id uuid.UUID) error { return ErrNotImplemented }
-func (r *inquiryRepositoryGorm) List(companyID uuid.UUID, limit, offset int) ([]models.Inquiry, error) { return nil, ErrNotImplemented }
-func (r *inquiryRepositoryGorm) GetByStatus(companyID uuid.UUID, status string) ([]models.Inquiry, error) { return nil, ErrNotImplemented }
-func (r *inquiryRepositoryGorm) GetByCustomer(customerID uuid.UUID) ([]models.Inquiry, error) { return nil, ErrNotImplemented }
-func (r *inquiryRepositoryGorm) GetByEngineer(engineerID uuid.UUID) ([]models.Inquiry, error) { return nil, ErrNotImplemented }
-func (r *inquiryRepositoryGorm) GetPendingInquiries(companyID uuid.UUID) ([]models.Inquiry, error) { return nil, ErrNotImplemented }
+func (r *inquiryRepositoryGorm) List(companyID uuid.UUID, params map[string]interface{}) ([]model.Inquiry, int64, error) { return nil, 0, ErrNotImplemented }
 
 type processRepositoryGorm struct{ db *gorm.DB }
 func NewProcessRepositoryGorm(db *gorm.DB) ProcessRepository { return &processRepositoryGorm{db: db} }
@@ -118,6 +114,24 @@ func (r *complianceRepositoryGorm) GetDocumentRequirements(productType, exportCo
 func (r *complianceRepositoryGorm) CreateCheckResult(result *models.ComplianceCheckResult) error { return ErrNotImplemented }
 func (r *complianceRepositoryGorm) GetCheckHistory(inquiryID uuid.UUID) ([]models.ComplianceCheckResult, error) { return nil, ErrNotImplemented }
 
+// Account Repository
+type accountRepositoryGorm struct{ db *gorm.DB }
+func NewAccountRepositoryGorm(db *gorm.DB) AccountRepository { return &accountRepositoryGorm{db: db} }
+func (r *accountRepositoryGorm) Create(ctx context.Context, account *model.Account) error { return ErrNotImplemented }
+func (r *accountRepositoryGorm) GetByID(ctx context.Context, id uuid.UUID) (*model.Account, error) { return nil, ErrNotImplemented }
+func (r *accountRepositoryGorm) GetByEmail(ctx context.Context, email string) (*model.Account, error) { return nil, ErrNotImplemented }
+func (r *accountRepositoryGorm) Update(ctx context.Context, account *model.Account) error { return ErrNotImplemented }
+func (r *accountRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error { return ErrNotImplemented }
+func (r *accountRepositoryGorm) List(ctx context.Context, companyID uuid.UUID) ([]*model.Account, error) { return nil, ErrNotImplemented }
+
+// Tariff Repository
+type tariffRepositoryGorm struct{ db *gorm.DB }
+func NewTariffRepository(db *gorm.DB) TariffRepository { return &tariffRepositoryGorm{db: db} }
+func (r *tariffRepositoryGorm) Create(ctx context.Context, tariff interface{}) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) GetByID(ctx context.Context, id uuid.UUID) (interface{}, error) { return nil, ErrNotImplemented }
+func (r *tariffRepositoryGorm) Update(ctx context.Context, tariff interface{}) error { return ErrNotImplemented }
+func (r *tariffRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error { return ErrNotImplemented }
+
 // N8N Repository
 type n8nRepositoryGorm struct{ db *gorm.DB }
 func NewN8NRepositoryGorm(db *gorm.DB) N8NRepository { return &n8nRepositoryGorm{db: db} }
@@ -140,10 +154,12 @@ func (r *n8nRepositoryGorm) GetExecutionByID(id uuid.UUID) (*models.N8NExecution
 func (r *n8nRepositoryGorm) ListExecutions(workflowID uuid.UUID, limit int) ([]models.N8NExecution, error) { return nil, ErrNotImplemented }
 func (r *n8nRepositoryGorm) CreateMapping(mapping *models.N8NFieldMapping) error { return ErrNotImplemented }
 func (r *n8nRepositoryGorm) GetMappingsByWorkflow(workflowID uuid.UUID) ([]models.N8NFieldMapping, error) { return nil, ErrNotImplemented }
+func (r *n8nRepositoryGorm) CreateEventLog(log *models.N8NEventLog) error { return ErrNotImplemented }
 
 // Quote Repository
 type quoteRepositoryGorm struct{ db *gorm.DB }
 func NewQuoteRepositoryGorm(db *gorm.DB) QuoteRepository { return &quoteRepositoryGorm{db: db} }
+func (r *quoteRepositoryGorm) Create(quote *models.Quote) error { return ErrNotImplemented }
 func (r *quoteRepositoryGorm) CreateQuote(quote *models.Quote) error { return ErrNotImplemented }
 func (r *quoteRepositoryGorm) GetQuoteByID(id uuid.UUID) (*models.Quote, error) { return nil, ErrNotImplemented }
 func (r *quoteRepositoryGorm) UpdateQuote(quote *models.Quote) error { return ErrNotImplemented }
