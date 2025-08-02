@@ -64,16 +64,6 @@ type N8NFieldMapping struct {
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
-type N8NEventLog struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	WorkflowID      uuid.UUID  `json:"workflow_id"`
-	EventType       string     `json:"event_type"`
-	EventData       JSONB      `json:"event_data" gorm:"type:jsonb"`
-	Status          string     `json:"status"`
-	Message         string     `json:"message"`
-	CreatedAt       time.Time  `json:"created_at"`
-}
-
 // Cost Calculation Models (CostCalculation is already defined in process_cost.go)
 
 // Order Models (OrderItem is already defined in order.go)
