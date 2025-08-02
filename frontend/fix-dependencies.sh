@@ -1,3 +1,14 @@
+#!/bin/bash
+
+# Fix npm install issues for Codespaces
+
+echo "Fixing frontend dependencies..."
+
+# Clean up
+rm -rf node_modules package-lock.json yarn.lock
+
+# Create a temporary package.json with fixed dependencies
+cat > package-temp.json << 'EOF'
 {
   "name": "fastenmind-frontend",
   "version": "0.1.0",
@@ -35,9 +46,6 @@
     "react-dom": "^18",
     "react-hook-form": "^7.49.2",
     "react-hot-toast": "^2.4.1",
-    "recharts": "^2.15.4",
-    "react-chartjs-2": "^5.2.0",
-    "chart.js": "^4.4.1",
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4",
@@ -55,3 +63,47 @@
     "typescript": "^5"
   }
 }
+EOF
+
+# Install basic dependencies first
+npm install next react react-dom
+
+# Install UI dependencies one by one
+npm install @radix-ui/react-slot
+npm install @radix-ui/react-toast
+npm install @radix-ui/react-dialog
+npm install @radix-ui/react-alert-dialog
+npm install @radix-ui/react-avatar
+npm install @radix-ui/react-dropdown-menu
+npm install @radix-ui/react-label
+npm install @radix-ui/react-select
+npm install @radix-ui/react-separator
+npm install @radix-ui/react-tabs
+
+# Install other dependencies
+npm install @hookform/resolvers
+npm install @tanstack/react-query @tanstack/react-query-devtools
+npm install @tanstack/react-table
+npm install axios
+npm install class-variance-authority
+npm install clsx
+npm install date-fns
+npm install framer-motion
+npm install lucide-react
+npm install react-hook-form
+npm install react-hot-toast
+npm install tailwind-merge
+npm install tailwindcss-animate
+npm install zod
+npm install zustand
+
+# Install dev dependencies
+npm install -D @types/node @types/react @types/react-dom
+npm install -D autoprefixer postcss tailwindcss
+npm install -D eslint eslint-config-next
+npm install -D typescript
+
+# Clean up
+rm package-temp.json
+
+echo "Dependencies installation complete!"
