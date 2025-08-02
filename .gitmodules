@@ -1,0 +1,3 @@
+[submodule "fastenmind-system"]
+	path = fastenmind-system
+	url = https://github.com/wac0705/fastenmind-system.git

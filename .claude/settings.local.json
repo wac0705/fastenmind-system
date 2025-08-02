@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(go get:*)",
+      "Bash(mv:*)",
+      "Bash(move:*)",
+      "Bash(rm:*)",
+      "Bash(touch:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(chmod:*)",
+      "Bash(git push:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(./compile_and_run.sh)",
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(git config:*)",
+      "Bash(cat:*)",
+      "Bash(go:*)",
+      "Bash(PATH=\"$PATH:/c/Program Files/Go/bin\")",
+      "Bash(cmd.exe /c \"cd fastenmind-system\\backend && \"\"C:\\Program Files\\Go\\bin\\go.exe\"\" build -o fastenmind-api.exe ./cmd/server\")",
+      "Bash(powershell:*)",
+      "Bash(where go)",
+      "Bash(del internalmodelsintegration_missing.go)"
+    ],
+    "deny": []
+  }
+}
