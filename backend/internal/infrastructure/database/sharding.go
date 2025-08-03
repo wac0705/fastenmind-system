@@ -486,7 +486,10 @@ func (sm *ShardMigration) MigrateData(ctx context.Context, fromShardID, toShardI
 		return err
 	}
 	
+	// TODO: Implement actual data migration between fromShard and toShard
 	// This is a simplified implementation
+	_ = fromShard // Use the variables to avoid compilation error
+	_ = toShard
 	// Actual implementation would:
 	// 1. Read data in batches
 	// 2. Apply filter

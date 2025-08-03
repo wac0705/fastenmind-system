@@ -2,13 +2,51 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"github.com/fastenmind/fastener-api/internal/domain/models"
 	"github.com/fastenmind/fastener-api/internal/infrastructure/database"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// ListInquiriesParams defines parameters for listing inquiries
+type ListInquiriesParams struct {
+	CompanyID           uuid.UUID
+	CustomerID          *uuid.UUID
+	Status              *string
+	AssignedEngineerID  *uuid.UUID
+	StartDate           *time.Time
+	EndDate             *time.Time
+	Limit               int
+	Offset              int
+}
+
+// ListQuotesParams defines parameters for listing quotes
+type ListQuotesParams struct {
+	CompanyID           uuid.UUID
+	InquiryID           *uuid.UUID
+	CustomerID          *uuid.UUID
+	Status              *string
+	AssignedEngineerID  *uuid.UUID
+	PreparedBy          *uuid.UUID
+	StartDate           *time.Time
+	EndDate             *time.Time
+	Limit               int
+	Offset              int
+}
+
+// ListOrdersParams defines parameters for listing orders
+type ListOrdersParams struct {
+	CompanyID    uuid.UUID
+	QuoteID      *uuid.UUID
+	CustomerID   *uuid.UUID
+	Status       *string
+	StartDate    *time.Time
+	EndDate      *time.Time
+	Limit        int
+	Offset       int
+}
 
 // BaseRepository provides common database operations with read/write separation
 type BaseRepository struct {

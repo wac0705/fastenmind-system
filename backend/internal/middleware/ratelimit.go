@@ -119,14 +119,14 @@ func RateLimiter(config RateLimiterConfig) echo.MiddlewareFunc {
 }
 
 // getOrCreateLimiter gets or creates a rate limiter for the given key
-func getOrCreateLimiter(key string, rate, burst int) *rate.Limiter {
+func getOrCreateLimiter(key string, rateLimit, burst int) *rate.Limiter {
 	globalMemoryStore.mu.RLock()
 	limiter, exists := globalMemoryStore.limiters[key]
 	globalMemoryStore.mu.RUnlock()
 	
 	if !exists {
 		globalMemoryStore.mu.Lock()
-		limiter = rate.NewLimiter(rate.Limit(rate), burst)
+		limiter = rate.NewLimiter(rate.Limit(rateLimit), burst)
 		globalMemoryStore.limiters[key] = limiter
 		globalMemoryStore.mu.Unlock()
 	}
@@ -143,7 +143,7 @@ func checkRedisRateLimit(c echo.Context, store *cache.RedisCache, key string, ra
 	windowStart := now - 60 // 1 minute window
 	
 	// Redis key for rate limiting
-	redisKey := fmt.Sprintf("ratelimit:%s:%d", key, now/60)
+	redisKey := fmt.Sprintf("ratelimit:%s:%d", key, windowStart/60)
 	
 	// Get current count
 	countStr, err := store.Get(ctx, redisKey)
