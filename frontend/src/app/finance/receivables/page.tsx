@@ -62,7 +62,7 @@ export default function ReceivablesPage() {
       search,
       status: statusFilter,
       aging_category: agingFilter,
-      collection_status: collectionFilter,
+      // collection_status: collectionFilter,
     }),
   })
 

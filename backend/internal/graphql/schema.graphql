@@ -1,0 +1,374 @@
+scalar Time
+scalar UUID
+scalar Decimal
+
+# Base types
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+# Company types
+type Company {
+  id: UUID!
+  code: String!
+  name: String!
+  nameEn: String
+  shortName: String
+  taxId: String
+  country: String!
+  address: String
+  phone: String
+  fax: String
+  email: String
+  website: String
+  type: CompanyType!
+  parentCompany: Company
+  isActive: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum CompanyType {
+  HEADQUARTERS
+  SUBSIDIARY
+  FACTORY
+}
+
+# Account types
+type Account {
+  id: UUID!
+  company: Company!
+  username: String!
+  email: String!
+  fullName: String!
+  phoneNumber: String
+  role: AccountRole!
+  isActive: Boolean!
+  isEmailVerified: Boolean!
+  lastLoginAt: Time
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum AccountRole {
+  ADMIN
+  MANAGER
+  ENGINEER
+  SALES
+  VIEWER
+}
+
+# Customer types
+type Customer {
+  id: UUID!
+  company: Company!
+  customerCode: String!
+  name: String!
+  nameEn: String
+  shortName: String
+  country: String!
+  taxId: String
+  address: String
+  shippingAddress: String
+  contactPerson: String
+  contactPhone: String
+  contactEmail: String
+  paymentTerms: String
+  creditLimit: Decimal
+  currency: String!
+  isActive: Boolean!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+# Inquiry types
+type Inquiry {
+  id: UUID!
+  inquiryNo: String!
+  company: Company!
+  customer: Customer!
+  sales: Account!
+  status: InquiryStatus!
+  productCategory: String!
+  productName: String!
+  drawingFiles: [String!]
+  quantity: Int!
+  unit: String!
+  requiredDate: Time!
+  incoterm: String!
+  destinationPort: String
+  destinationAddress: String
+  paymentTerms: String
+  specialRequirements: String
+  assignedEngineer: Account
+  assignedAt: Time
+  quote: Quote
+  quotedAt: Time
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum InquiryStatus {
+  PENDING
+  ASSIGNED
+  QUOTED
+  REJECTED
+  CANCELLED
+}
+
+type InquiryConnection {
+  edges: [InquiryEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type InquiryEdge {
+  node: Inquiry!
+  cursor: String!
+}
+
+# Quote types
+type Quote {
+  id: UUID!
+  quoteNo: String!
+  company: Company!
+  customer: Customer!
+  inquiry: Inquiry
+  sales: Account!
+  engineer: Account!
+  status: QuoteStatus!
+  validityDays: Int!
+  expiryDate: Time!
+  currency: String!
+  exchangeRate: Decimal!
+  incoterm: String!
+  paymentTerms: String
+  deliveryTerms: String
+  subTotal: Decimal!
+  discountPercent: Decimal
+  discountAmount: Decimal
+  taxPercent: Decimal
+  taxAmount: Decimal
+  shippingCost: Decimal
+  totalAmount: Decimal!
+  profitMargin: Decimal
+  notes: String
+  items: [QuoteItem!]!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+enum QuoteStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  EXPIRED
+  ORDERED
+}
+
+type QuoteItem {
+  id: UUID!
+  itemNo: Int!
+  description: String!
+  specifications: String
+  quantity: Decimal!
+  unit: String!
+  unitPrice: Decimal!
+  discountPercent: Decimal
+  amount: Decimal!
+  leadTimeDays: Int
+  notes: String
+}
+
+type QuoteConnection {
+  edges: [QuoteEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type QuoteEdge {
+  node: Quote!
+  cursor: String!
+}
+
+# Statistics types
+type InquiryStatistics {
+  totalCount: Int!
+  pendingCount: Int!
+  assignedCount: Int!
+  quotedCount: Int!
+  rejectedCount: Int!
+  conversionRate: Float!
+  averageResponseTime: Float!
+}
+
+type QuoteStatistics {
+  totalCount: Int!
+  totalValue: Decimal!
+  approvedCount: Int!
+  approvedValue: Decimal!
+  conversionRate: Float!
+  averageValue: Decimal!
+  byStatus: [StatusCount!]!
+  byCurrency: [CurrencyAmount!]!
+}
+
+type StatusCount {
+  status: String!
+  count: Int!
+}
+
+type CurrencyAmount {
+  currency: String!
+  amount: Decimal!
+}
+
+# Input types
+input CreateInquiryInput {
+  customerId: UUID!
+  productCategory: String!
+  productName: String!
+  drawingFiles: [String!]
+  quantity: Int!
+  unit: String!
+  requiredDate: Time!
+  incoterm: String!
+  destinationPort: String
+  destinationAddress: String
+  paymentTerms: String
+  specialRequirements: String
+}
+
+input UpdateInquiryInput {
+  productName: String
+  quantity: Int
+  requiredDate: Time
+  specialRequirements: String
+}
+
+input CreateQuoteInput {
+  customerId: UUID!
+  inquiryId: UUID
+  currency: String!
+  validityDays: Int!
+  incoterm: String!
+  paymentTerms: String
+  deliveryTerms: String
+  notes: String
+  items: [CreateQuoteItemInput!]!
+}
+
+input CreateQuoteItemInput {
+  description: String!
+  specifications: String
+  quantity: Decimal!
+  unit: String!
+  unitPrice: Decimal!
+  discountPercent: Decimal
+  leadTimeDays: Int
+  notes: String
+}
+
+input InquiryFilter {
+  companyId: UUID
+  customerId: UUID
+  salesId: UUID
+  engineerId: UUID
+  status: InquiryStatus
+  dateFrom: Time
+  dateTo: Time
+  searchTerm: String
+}
+
+input QuoteFilter {
+  companyId: UUID
+  customerId: UUID
+  salesId: UUID
+  engineerId: UUID
+  status: QuoteStatus
+  currency: String
+  dateFrom: Time
+  dateTo: Time
+  amountMin: Decimal
+  amountMax: Decimal
+  searchTerm: String
+}
+
+input PageInput {
+  first: Int
+  after: String
+  last: Int
+  before: String
+}
+
+# Queries
+type Query {
+  # Company queries
+  company(id: UUID!): Company
+  companies: [Company!]!
+  
+  # Account queries
+  me: Account
+  account(id: UUID!): Account
+  accounts(companyId: UUID, role: AccountRole): [Account!]!
+  
+  # Customer queries
+  customer(id: UUID!): Customer
+  customers(companyId: UUID, searchTerm: String): [Customer!]!
+  
+  # Inquiry queries
+  inquiry(id: UUID!): Inquiry
+  inquiries(filter: InquiryFilter, page: PageInput): InquiryConnection!
+  inquiryStatistics(filter: InquiryFilter): InquiryStatistics!
+  
+  # Quote queries
+  quote(id: UUID!): Quote
+  quotes(filter: QuoteFilter, page: PageInput): QuoteConnection!
+  quoteStatistics(filter: QuoteFilter): QuoteStatistics!
+  quoteRevisions(quoteId: UUID!): [Quote!]!
+  expiringQuotes(daysToExpire: Int!): [Quote!]!
+}
+
+# Mutations
+type Mutation {
+  # Inquiry mutations
+  createInquiry(input: CreateInquiryInput!): Inquiry!
+  updateInquiry(id: UUID!, input: UpdateInquiryInput!): Inquiry!
+  assignInquiry(id: UUID!, engineerId: UUID!, note: String): Inquiry!
+  rejectInquiry(id: UUID!, reason: String!): Inquiry!
+  
+  # Quote mutations
+  createQuote(input: CreateQuoteInput!): Quote!
+  submitQuote(id: UUID!, method: String!): Quote!
+  approveQuote(id: UUID!, notes: String): Quote!
+  rejectQuote(id: UUID!, reason: String!): Quote!
+  reviseQuote(id: UUID!, reason: String!, items: [CreateQuoteItemInput!]): Quote!
+  
+  # Authentication
+  login(username: String!, password: String!): AuthPayload!
+  refreshToken(token: String!): AuthPayload!
+  logout: Boolean!
+}
+
+type AuthPayload {
+  token: String!
+  refreshToken: String!
+  user: Account!
+}
+
+# Subscriptions
+type Subscription {
+  # Inquiry subscriptions
+  inquiryCreated(companyId: UUID): Inquiry!
+  inquiryUpdated(id: UUID!): Inquiry!
+  inquiryAssigned(engineerId: UUID!): Inquiry!
+  
+  # Quote subscriptions
+  quoteCreated(customerId: UUID): Quote!
+  quoteUpdated(id: UUID!): Quote!
+  quoteStatusChanged(id: UUID!): Quote!
+}

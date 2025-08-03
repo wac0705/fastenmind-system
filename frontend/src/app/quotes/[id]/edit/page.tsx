@@ -82,7 +82,7 @@ export default function EditQuotePage() {
   // Fetch customers
   const { data: customers } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => customerService.getCustomers({ page_size: 100 }),
+    queryFn: () => customerService.list({ page_size: 100 }),
   })
 
   // Initialize form data when quote is loaded
@@ -101,14 +101,14 @@ export default function EditQuotePage() {
   useEffect(() => {
     if (versions && versions.length > 0 && versions[0].items) {
       const currentVersion = versions[0]
-      setItems(currentVersion.items.map(item => ({
+      setItems(currentVersion.items?.map(item => ({
         product_name: item.product_name,
         product_specs: item.product_specs || '',
         quantity: item.quantity,
         unit: item.unit,
         unit_price: item.unit_price,
         notes: item.notes || ''
-      })))
+      })) || [])
       
       if (currentVersion.terms) {
         setTerms(currentVersion.terms.map(term => ({
@@ -269,9 +269,9 @@ export default function EditQuotePage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => router.push(`/quotes/${quoteId}`)}>取消</Button>
-            <Button onClick={handleSubmit} disabled={updateQuoteMutation.isLoading}>
+            <Button onClick={handleSubmit} disabled={updateQuoteMutation.isPending}>
               <Save className="mr-2 h-4 w-4" />
-              {updateQuoteMutation.isLoading ? '更新中...' : '儲存變更'}
+              {updateQuoteMutation.isPending ? '更新中...' : '儲存變更'}
             </Button>
           </div>
         </div>
@@ -704,9 +704,9 @@ export default function EditQuotePage() {
               <div className="pt-6 border-t">
                 <div className="flex justify-end gap-4">
                   <Button variant="outline" onClick={() => router.push(`/quotes/${quoteId}`)}>取消</Button>
-                  <Button onClick={handleSubmit} disabled={updateQuoteMutation.isLoading}>
+                  <Button onClick={handleSubmit} disabled={updateQuoteMutation.isPending}>
                     <Save className="mr-2 h-4 w-4" />
-                    {updateQuoteMutation.isLoading ? '更新中...' : '儲存變更'}
+                    {updateQuoteMutation.isPending ? '更新中...' : '儲存變更'}
                   </Button>
                 </div>
               </div>

@@ -312,8 +312,8 @@ type ComplianceCheck struct {
 	Resolver   *User            `gorm:"foreignKey:ResolvedBy" json:"resolver,omitempty"`
 }
 
-// ExchangeRate 匯率管理
-type ExchangeRate struct {
+// TradeExchangeRate 貿易匯率管理
+type TradeExchangeRate struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`
 	CompanyID    uuid.UUID `gorm:"type:uuid;not null" json:"company_id"`
 	FromCurrency string    `gorm:"not null" json:"from_currency"`
@@ -460,7 +460,7 @@ func (cc *ComplianceCheck) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-func (er *ExchangeRate) BeforeCreate(tx *gorm.DB) error {
+func (er *TradeExchangeRate) BeforeCreate(tx *gorm.DB) error {
 	if er.ID == uuid.Nil {
 		er.ID = uuid.New()
 	}

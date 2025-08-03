@@ -1,0 +1,279 @@
+{
+  "name": "FastenMind - Exchange Rate Updates",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily Schedule - 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.exchangerate-api.com/v4/latest/USD",
+        "options": {}
+      },
+      "id": "fetch-rates",
+      "name": "Fetch Exchange Rates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process exchange rates and prepare for update\nconst rates = $input.all()[0].json.rates;\nconst baseCurrency = 'USD';\nconst targetCurrencies = ['EUR', 'GBP', 'JPY', 'CNY', 'TWD', 'SGD', 'KRW'];\n\nconst updates = [];\nfor (const currency of targetCurrencies) {\n  if (rates[currency]) {\n    updates.push({\n      base_currency: baseCurrency,\n      target_currency: currency,\n      rate: rates[currency],\n      inverse_rate: 1 / rates[currency]\n    });\n  }\n}\n\nreturn [{\n  json: {\n    updates: updates,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "process-rates",
+      "name": "Process Exchange Rates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/exchange-rates/batch-update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "rates",
+              "value": "={{$json[\"updates\"]}}"
+            },
+            {
+              "name": "source",
+              "value": "exchangerate-api"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-rates",
+      "name": "Update Rates in System",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/exchange-rates/check-changes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "threshold",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-changes",
+      "name": "Check Significant Changes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"has_significant_changes\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-if-notify",
+      "name": "Should Notify?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "finance@fastenmind.com",
+        "subject": "Significant Exchange Rate Changes Detected",
+        "html": true,
+        "htmlBody": "=<h2>Exchange Rate Alert</h2>\n<p>Significant exchange rate changes have been detected:</p>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><th>Currency Pair</th><th>Previous Rate</th><th>Current Rate</th><th>Change %</th></tr>\n{{$json[\"changes\"].map(c => `<tr><td>${c.pair}</td><td>${c.previous_rate}</td><td>${c.current_rate}</td><td style=\"color: ${c.change_percent > 0 ? 'green' : 'red'}\">${c.change_percent.toFixed(2)}%</td></tr>`).join(\"\\n\")}}\n</table>\n<p>Please review and update pricing if necessary.</p>\n<p>Best regards,<br>FastenMind System</p>",
+        "options": {}
+      },
+      "id": "send-alert",
+      "name": "Send Change Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "exchange_rate_update"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify({rates_updated: $json[\"updates\"].length, significant_changes: $json[\"has_significant_changes\"]})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-update",
+      "name": "Log Update Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 400]
+    }
+  ],
+  "connections": {
+    "Daily Schedule - 8AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch Exchange Rates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Exchange Rates": {
+      "main": [
+        [
+          {
+            "node": "Process Exchange Rates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Exchange Rates": {
+      "main": [
+        [
+          {
+            "node": "Update Rates in System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Rates in System": {
+      "main": [
+        [
+          {
+            "node": "Check Significant Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Significant Changes": {
+      "main": [
+        [
+          {
+            "node": "Should Notify?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Notify?": {
+      "main": [
+        [
+          {
+            "node": "Send Change Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Update Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Change Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Update Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "5",
+      "name": "finance"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "jkl012"
+}

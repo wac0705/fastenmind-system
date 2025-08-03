@@ -1,0 +1,409 @@
+{
+  "name": "FastenMind - Customer Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "id": "daily-trigger",
+      "name": "Daily Trigger - 10AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/customers/follow-up-candidates",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-candidates",
+      "name": "Get Follow-up Candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Categorize customers for different follow-up types\nconst candidates = $input.all()[0].json.candidates || [];\n\nconst followUpTypes = {\n  quote_follow_up: [],      // Quotes pending > 7 days\n  order_check_in: [],       // Recent orders delivered\n  re_engagement: [],        // No activity > 90 days\n  satisfaction_survey: [],  // Post-delivery survey\n  upsell_opportunity: []    // Based on purchase history\n};\n\nconst today = new Date();\n\ncandidates.forEach(customer => {\n  // Quote follow-up\n  if (customer.pending_quotes && customer.pending_quotes.length > 0) {\n    customer.pending_quotes.forEach(quote => {\n      const quoteDays = Math.floor((today - new Date(quote.created_at)) / (1000 * 60 * 60 * 24));\n      if (quoteDays >= 7 && quoteDays <= 30) {\n        followUpTypes.quote_follow_up.push({\n          ...customer,\n          quote: quote,\n          days_pending: quoteDays,\n          follow_up_reason: 'pending_quote'\n        });\n      }\n    });\n  }\n  \n  // Order check-in (delivered in last 7-14 days)\n  if (customer.recent_orders && customer.recent_orders.length > 0) {\n    customer.recent_orders.forEach(order => {\n      if (order.status === 'delivered') {\n        const deliveryDays = Math.floor((today - new Date(order.delivered_at)) / (1000 * 60 * 60 * 24));\n        if (deliveryDays >= 7 && deliveryDays <= 14) {\n          followUpTypes.order_check_in.push({\n            ...customer,\n            order: order,\n            days_since_delivery: deliveryDays,\n            follow_up_reason: 'order_delivered'\n          });\n        }\n      }\n    });\n  }\n  \n  // Re-engagement (no activity > 90 days)\n  if (customer.last_activity_date) {\n    const inactiveDays = Math.floor((today - new Date(customer.last_activity_date)) / (1000 * 60 * 60 * 24));\n    if (inactiveDays > 90 && inactiveDays < 180) {\n      followUpTypes.re_engagement.push({\n        ...customer,\n        inactive_days: inactiveDays,\n        follow_up_reason: 're_engagement'\n      });\n    }\n  }\n  \n  // Satisfaction survey (delivered 30 days ago)\n  if (customer.recent_orders && customer.recent_orders.length > 0) {\n    const surveyCandidates = customer.recent_orders.filter(order => {\n      if (order.status === 'delivered' && !order.survey_sent) {\n        const deliveryDays = Math.floor((today - new Date(order.delivered_at)) / (1000 * 60 * 60 * 24));\n        return deliveryDays >= 30 && deliveryDays <= 35;\n      }\n      return false;\n    });\n    \n    if (surveyCandidates.length > 0) {\n      followUpTypes.satisfaction_survey.push({\n        ...customer,\n        order: surveyCandidates[0],\n        follow_up_reason: 'satisfaction_survey'\n      });\n    }\n  }\n  \n  // Upsell opportunity (regular customer with consistent orders)\n  if (customer.order_count > 5 && customer.avg_order_value > 10000) {\n    const lastOrderDays = Math.floor((today - new Date(customer.last_order_date)) / (1000 * 60 * 60 * 24));\n    if (lastOrderDays > 30 && lastOrderDays < 60) {\n      followUpTypes.upsell_opportunity.push({\n        ...customer,\n        days_since_last_order: lastOrderDays,\n        follow_up_reason: 'upsell_opportunity'\n      });\n    }\n  }\n});\n\n// Flatten all follow-ups into a single array\nconst allFollowUps = [];\nObject.entries(followUpTypes).forEach(([type, customers]) => {\n  customers.forEach(customer => {\n    allFollowUps.push({\n      ...customer,\n      follow_up_type: type\n    });\n  });\n});\n\nreturn allFollowUps.map(followUp => ({ json: followUp }));"
+      },
+      "id": "categorize-followups",
+      "name": "Categorize Follow-ups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"follow_up_type\"]}}",
+              "value2": "quote_follow_up"
+            },
+            {
+              "value1": "={{$json[\"follow_up_type\"]}}",
+              "value2": "order_check_in"
+            },
+            {
+              "value1": "={{$json[\"follow_up_type\"]}}",
+              "value2": "re_engagement"
+            },
+            {
+              "value1": "={{$json[\"follow_up_type\"]}}",
+              "value2": "satisfaction_survey"
+            },
+            {
+              "value1": "={{$json[\"follow_up_type\"]}}",
+              "value2": "upsell_opportunity"
+            }
+          ]
+        }
+      },
+      "id": "route-by-type",
+      "name": "Route by Follow-up Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@fastenmind.com",
+        "toEmail": "={{$json[\"primary_contact_email\"]}}",
+        "subject": "Following up on your quote - {{$json[\"quote\"][\"quote_no\"]}}",
+        "html": true,
+        "htmlBody": "=<p>Dear {{$json[\"contact_name\"]}},</p>\n<p>I hope this email finds you well. I wanted to follow up on the quote we sent you {{$json[\"days_pending\"]}} days ago for your inquiry.</p>\n<h3>Quote Details:</h3>\n<ul>\n<li><strong>Quote Number:</strong> {{$json[\"quote\"][\"quote_no\"]}}</li>\n<li><strong>Total Amount:</strong> {{$json[\"quote\"][\"currency\"]}} {{$json[\"quote\"][\"total_amount\"].toLocaleString()}}</li>\n<li><strong>Valid Until:</strong> {{new Date($json[\"quote\"][\"valid_until\"]).toLocaleDateString()}}</li>\n</ul>\n<p>We're committed to providing you with the best fastener solutions and would be happy to discuss any questions or concerns you might have about this quote.</p>\n<p>Would you be available for a brief call this week to discuss your requirements in more detail?</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/quotes/{{$json[\"quote\"][\"id\"]}}/view\">View Quote Online</a></p>\n<p>Looking forward to hearing from you.</p>\n<p>Best regards,<br>{{$json[\"assigned_sales_rep\"] || 'Your FastenMind Sales Team'}}<br>FastenMind Corporation</p>",
+        "options": {}
+      },
+      "id": "send-quote-followup",
+      "name": "Send Quote Follow-up",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@fastenmind.com",
+        "toEmail": "={{$json[\"primary_contact_email\"]}}",
+        "subject": "How's your recent order? - {{$json[\"order\"][\"order_no\"]}}",
+        "html": true,
+        "htmlBody": "=<p>Dear {{$json[\"contact_name\"]}},</p>\n<p>Thank you for your recent order with FastenMind. We hope your products arrived safely and meet your expectations.</p>\n<h3>Your Order:</h3>\n<ul>\n<li><strong>Order Number:</strong> {{$json[\"order\"][\"order_no\"]}}</li>\n<li><strong>Delivered On:</strong> {{new Date($json[\"order\"][\"delivered_at\"]).toLocaleDateString()}}</li>\n</ul>\n<p>We'd love to hear about your experience:</p>\n<ul>\n<li>Did the products meet your quality expectations?</li>\n<li>Was the delivery process smooth?</li>\n<li>Do you have any feedback for us?</li>\n</ul>\n<p>If you have any questions or concerns about your order, please don't hesitate to reach out. We're here to help!</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/orders/{{$json[\"order\"][\"id\"]}}/feedback\">Provide Feedback</a></p>\n<p>Best regards,<br>FastenMind Customer Support</p>",
+        "options": {}
+      },
+      "id": "send-order-checkin",
+      "name": "Send Order Check-in",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@fastenmind.com",
+        "toEmail": "={{$json[\"primary_contact_email\"]}}",
+        "subject": "We miss you at FastenMind!",
+        "html": true,
+        "htmlBody": "=<p>Dear {{$json[\"contact_name\"]}},</p>\n<p>It's been a while since we last connected, and we wanted to reach out to see how you're doing.</p>\n<p>At FastenMind, we're constantly improving our products and services:</p>\n<ul>\n<li>✨ New product lines added to our catalog</li>\n<li>🚀 Faster delivery options now available</li>\n<li>💰 Special pricing for returning customers</li>\n<li>🔧 Enhanced technical support services</li>\n</ul>\n<p>We'd love to understand how we can better serve your fastener needs. Is there anything specific you're looking for?</p>\n<p>As a valued customer, we're offering you a <strong>10% discount</strong> on your next order. Use code: <strong>WELCOME10</strong></p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/catalog\">Browse Our Latest Products</a></p>\n<p>Looking forward to working with you again!</p>\n<p>Best regards,<br>Your FastenMind Team</p>",
+        "options": {}
+      },
+      "id": "send-reengagement",
+      "name": "Send Re-engagement",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "feedback@fastenmind.com",
+        "toEmail": "={{$json[\"primary_contact_email\"]}}",
+        "subject": "How was your experience with FastenMind?",
+        "html": true,
+        "htmlBody": "=<p>Dear {{$json[\"contact_name\"]}},</p>\n<p>Thank you for choosing FastenMind for your recent order. Your feedback is invaluable in helping us improve our products and services.</p>\n<p>We'd appreciate if you could take 2 minutes to complete our customer satisfaction survey:</p>\n<p style=\"text-align: center; margin: 30px 0;\">\n<a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/survey/{{$json[\"order\"][\"id\"]}}\" style=\"background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;\">Take Survey</a>\n</p>\n<p>Your responses will help us:</p>\n<ul>\n<li>Improve our product quality</li>\n<li>Enhance our customer service</li>\n<li>Better understand your needs</li>\n</ul>\n<p>As a thank you, you'll receive a <strong>5% discount</strong> on your next order after completing the survey.</p>\n<p>Thank you for your time and continued partnership.</p>\n<p>Best regards,<br>FastenMind Quality Team</p>",
+        "options": {}
+      },
+      "id": "send-survey",
+      "name": "Send Satisfaction Survey",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales@fastenmind.com",
+        "toEmail": "={{$json[\"primary_contact_email\"]}}",
+        "subject": "Exclusive offers for our valued customer",
+        "html": true,
+        "htmlBody": "=<p>Dear {{$json[\"contact_name\"]}},</p>\n<p>As one of our valued customers with {{$json[\"order_count\"]}} orders, we wanted to share some exclusive opportunities with you.</p>\n<h3>🌟 VIP Customer Benefits:</h3>\n<ul>\n<li><strong>Volume Discounts:</strong> Save up to 15% on bulk orders</li>\n<li><strong>Priority Processing:</strong> Your orders ship first</li>\n<li><strong>Dedicated Support:</strong> Direct line to our technical experts</li>\n<li><strong>Custom Solutions:</strong> Tailored fasteners for your specific needs</li>\n</ul>\n<p>Based on your purchase history, we've identified some products that might interest you:</p>\n<ul>\n<li>High-strength fasteners for heavy-duty applications</li>\n<li>Corrosion-resistant options for outdoor use</li>\n<li>Specialty fasteners for your industry</li>\n</ul>\n<p>Your average order value of {{$json[\"currency\"]}} {{$json[\"avg_order_value\"].toLocaleString()}} qualifies you for our premium tier benefits.</p>\n<p>Would you like to schedule a call with your account manager to discuss how we can better serve your growing needs?</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/schedule-call\">Schedule a Call</a></p>\n<p>Best regards,<br>Your Dedicated Account Team<br>FastenMind Corporation</p>",
+        "options": {}
+      },
+      "id": "send-upsell",
+      "name": "Send Upsell Opportunity",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 500]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/crm/activities",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customer_id",
+              "value": "={{$json[\"id\"]}}"
+            },
+            {
+              "name": "activity_type",
+              "value": "email_sent"
+            },
+            {
+              "name": "subject",
+              "value": "={{$json[\"follow_up_type\"]}}"
+            },
+            {
+              "name": "description",
+              "value": "=Automated follow-up email sent: {{$json[\"follow_up_reason\"]}}"
+            },
+            {
+              "name": "automated",
+              "value": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-activity",
+      "name": "Log CRM Activity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "customer_follow_up_sent"
+            },
+            {
+              "name": "entity_type",
+              "value": "customer"
+            },
+            {
+              "name": "entity_id",
+              "value": "={{$json[\"id\"]}}"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify({follow_up_type: $json[\"follow_up_type\"], follow_up_reason: $json[\"follow_up_reason\"]})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-event",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 300]
+    }
+  ],
+  "connections": {
+    "Daily Trigger - 10AM": {
+      "main": [
+        [
+          {
+            "node": "Get Follow-up Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Follow-up Candidates": {
+      "main": [
+        [
+          {
+            "node": "Categorize Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categorize Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Route by Follow-up Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Follow-up Type": {
+      "main": [
+        [
+          {
+            "node": "Send Quote Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Order Check-in",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Re-engagement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Satisfaction Survey",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Upsell Opportunity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Quote Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Log CRM Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Order Check-in": {
+      "main": [
+        [
+          {
+            "node": "Log CRM Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Re-engagement": {
+      "main": [
+        [
+          {
+            "node": "Log CRM Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Satisfaction Survey": {
+      "main": [
+        [
+          {
+            "node": "Log CRM Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Upsell Opportunity": {
+      "main": [
+        [
+          {
+            "node": "Log CRM Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log CRM Activity": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "11",
+      "name": "customer-engagement"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "abc890"
+}

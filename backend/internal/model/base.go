@@ -33,9 +33,10 @@ func (b *Base) BeforeUpdate() {
 
 // Pagination represents pagination parameters
 type Pagination struct {
-	Page     int `json:"page" query:"page"`
-	PageSize int `json:"page_size" query:"page_size"`
-	Total    int `json:"total"`
+	Page       int `json:"page" query:"page"`
+	PageSize   int `json:"page_size" query:"page_size"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
 }
 
 // GetOffset calculates offset for database query

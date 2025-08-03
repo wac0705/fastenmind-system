@@ -1,0 +1,397 @@
+{
+  "name": "FastenMind - Quote Approval Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quote-submitted",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "webhook-quote",
+      "name": "Webhook - Quote Submitted",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "fastenmind-quote-approval"
+    },
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "approval_level",
+              "value": "={{$json[\"body\"][\"total_amount\"] < 10000 ? 1 : $json[\"body\"][\"total_amount\"] < 50000 ? 2 : 3}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "determine-approval-level",
+      "name": "Determine Approval Level",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"approval_level\"]}}",
+              "value2": 1
+            },
+            {
+              "value1": "={{$json[\"approval_level\"]}}",
+              "value2": 2
+            },
+            {
+              "value1": "={{$json[\"approval_level\"]}}",
+              "value2": 3
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "approval-router",
+      "name": "Route by Approval Level",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "approver_role",
+              "value": "sales_manager"
+            },
+            {
+              "name": "approver_email",
+              "value": "sales.manager@fastenmind.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "level1-approver",
+      "name": "Level 1 Approver",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "approver_role",
+              "value": "regional_manager"
+            },
+            {
+              "name": "approver_email",
+              "value": "regional.manager@fastenmind.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "level2-approver",
+      "name": "Level 2 Approver",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "approver_role",
+              "value": "general_manager"
+            },
+            {
+              "name": "approver_email",
+              "value": "gm@fastenmind.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "level3-approver",
+      "name": "Level 3 Approver",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/quotes/{{$json[\"body\"][\"quote_id\"]}}/approval-request",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "approver_role",
+              "value": "={{$json[\"approver_role\"]}}"
+            },
+            {
+              "name": "approval_level",
+              "value": "={{$json[\"approval_level\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-approval-request",
+      "name": "Create Approval Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "={{$json[\"approver_email\"]}}",
+        "subject": "Quote Approval Required - {{$json[\"body\"][\"quote_no\"]}}",
+        "html": true,
+        "htmlBody": "=<h2>Quote Approval Request</h2>\n<p>A quote requires your approval:</p>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><td><strong>Quote No:</strong></td><td>{{$json[\"body\"][\"quote_no\"]}}</td></tr>\n<tr><td><strong>Customer:</strong></td><td>{{$json[\"body\"][\"customer_name\"]}}</td></tr>\n<tr><td><strong>Total Amount:</strong></td><td>{{$json[\"body\"][\"currency\"]}} {{$json[\"body\"][\"total_amount\"].toLocaleString()}}</td></tr>\n<tr><td><strong>Margin:</strong></td><td>{{$json[\"body\"][\"profit_margin\"]}}%</td></tr>\n<tr><td><strong>Created By:</strong></td><td>{{$json[\"body\"][\"created_by\"]}}</td></tr>\n<tr><td><strong>Delivery Terms:</strong></td><td>{{$json[\"body\"][\"delivery_terms\"]}}</td></tr>\n<tr><td><strong>Payment Terms:</strong></td><td>{{$json[\"body\"][\"payment_terms\"]}}</td></tr>\n</table>\n<h3>Items:</h3>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><th>Product</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>\n{{$json[\"body\"][\"items\"].map(item => `<tr><td>${item.product_name}</td><td>${item.quantity} ${item.unit}</td><td>${item.unit_price}</td><td>${item.total_price}</td></tr>`).join(\"\\n\")}}\n</table>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/quotes/{{$json[\"body\"][\"quote_id\"]}}/approve\">Approve Quote</a> | <a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/quotes/{{$json[\"body\"][\"quote_id\"]}}/reject\">Reject Quote</a></p>\n<p>Please review and take action within 24 hours.</p>\n<p>Best regards,<br>FastenMind System</p>",
+        "options": {}
+      },
+      "id": "send-approval-email",
+      "name": "Send Approval Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "amount": 86400,
+        "unit": "seconds"
+      },
+      "id": "wait-24-hours",
+      "name": "Wait 24 Hours",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/quotes/{{$json[\"body\"][\"quote_id\"]}}/approval-status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-approval-status",
+      "name": "Check Approval Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"approval_status\"]}}",
+              "value2": "pending"
+            }
+          ]
+        }
+      },
+      "id": "check-if-pending",
+      "name": "Check If Still Pending",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "={{$json[\"approver_email\"]}}",
+        "subject": "REMINDER: Quote Approval Required - {{$json[\"body\"][\"quote_no\"]}}",
+        "html": true,
+        "htmlBody": "=<h2 style=\"color: red;\">Urgent: Quote Approval Reminder</h2>\n<p>This quote has been pending approval for 24 hours and requires immediate attention:</p>\n<p><strong>Quote No:</strong> {{$json[\"body\"][\"quote_no\"]}}<br>\n<strong>Customer:</strong> {{$json[\"body\"][\"customer_name\"]}}<br>\n<strong>Amount:</strong> {{$json[\"body\"][\"currency\"]}} {{$json[\"body\"][\"total_amount\"].toLocaleString()}}</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/quotes/{{$json[\"body\"][\"quote_id\"]}}/approve\">Approve Now</a> | <a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/quotes/{{$json[\"body\"][\"quote_id\"]}}/reject\">Reject Quote</a></p>\n<p>Please take action immediately to avoid delays.</p>\n<p>Best regards,<br>FastenMind System</p>",
+        "options": {}
+      },
+      "id": "send-reminder",
+      "name": "Send Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2050, 200]
+    }
+  ],
+  "connections": {
+    "Webhook - Quote Submitted": {
+      "main": [
+        [
+          {
+            "node": "Determine Approval Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determine Approval Level": {
+      "main": [
+        [
+          {
+            "node": "Route by Approval Level",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Approval Level": {
+      "main": [
+        [
+          {
+            "node": "Level 1 Approver",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Level 2 Approver",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Level 3 Approver",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Level 1 Approver": {
+      "main": [
+        [
+          {
+            "node": "Create Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Level 2 Approver": {
+      "main": [
+        [
+          {
+            "node": "Create Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Level 3 Approver": {
+      "main": [
+        [
+          {
+            "node": "Create Approval Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Approval Request": {
+      "main": [
+        [
+          {
+            "node": "Send Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Wait 24 Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 24 Hours": {
+      "main": [
+        [
+          {
+            "node": "Check Approval Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Approval Status": {
+      "main": [
+        [
+          {
+            "node": "Check If Still Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Still Pending": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "4",
+      "name": "quote-management"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "ghi789"
+}

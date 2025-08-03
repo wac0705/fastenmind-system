@@ -249,7 +249,7 @@ export default function InventoryPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    inventoryData?.data.map((item) => (
+                    inventoryData?.data.map((item: any) => (
                       <TableRow
                         key={item.id}
                         className="cursor-pointer hover:bg-gray-50"

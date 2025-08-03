@@ -227,9 +227,10 @@ export default function SystemManagementPage() {
                   <div className="flex items-center gap-2">
                     {systemHealth && (
                       <>
-                        {React.createElement(getHealthStatus(systemHealth.status).icon, {
-                          className: `h-5 w-5 ${getHealthStatus(systemHealth.status).color}`,
-                        })}
+                        {(() => {
+                          const Icon = getHealthStatus(systemHealth.status).icon;
+                          return <Icon className={`h-5 w-5 ${getHealthStatus(systemHealth.status).color}`} />;
+                        })()}
                         <span className={`font-medium ${getHealthStatus(systemHealth.status).color}`}>
                           {getHealthStatus(systemHealth.status).label}
                         </span>

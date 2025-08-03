@@ -28,7 +28,7 @@ import {
   Hash,
   FileText,
   FileJson,
-  FileCsv,
+  FileText as FileCsv,
   FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
@@ -117,7 +117,7 @@ export default function ReportExecutionPage() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${execution?.execution_no || 'execution'}.${exportFormat}`
+      a.download = `${execution?.id.slice(-8) || 'execution'}.${exportFormat}`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -271,7 +271,7 @@ export default function ReportExecutionPage() {
                 <h1 className="text-3xl font-bold">{execution.report?.name}</h1>
                 {getStatusBadge(execution.status)}
               </div>
-              <p className="text-gray-600">執行編號：{execution.execution_no}</p>
+              <p className="text-gray-600">執行編號：{execution.id.slice(-8)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export default function ReportExecutionPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p>{execution.result_count || 0} 筆</p>
+              <p>{(execution as any).result_count || 0} 筆</p>
             </CardContent>
           </Card>
         </div>
@@ -407,7 +407,7 @@ export default function ReportExecutionPage() {
                     style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top left' }}
                   >
                     {/* Render report components */}
-                    {execution.result?.components?.map((component: any, index: number) => (
+                    {(execution as any).result?.components?.map((component: any, index: number) => (
                       <div key={index} className="mb-8">
                         {component.type === 'text' && (
                           <div>
@@ -452,7 +452,7 @@ export default function ReportExecutionPage() {
                     ))}
                     
                     {/* Default content if no components */}
-                    {!execution.result?.components && (
+                    {!(execution as any).result?.components && (
                       <div className="space-y-6">
                         <div>
                           <h2 className="text-2xl font-bold mb-4">銷售報表</h2>
@@ -531,7 +531,7 @@ export default function ReportExecutionPage() {
                   </div>
                   
                   {/* Pagination for multi-page reports */}
-                  {execution.result?.total_pages > 1 && (
+                  {(execution as any).result?.total_pages > 1 && (
                     <div className="flex items-center justify-center gap-2 mt-4">
                       <Button
                         variant="outline"
@@ -542,13 +542,13 @@ export default function ReportExecutionPage() {
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <span className="text-sm">
-                        第 {currentPage} 頁，共 {execution.result.total_pages} 頁
+                        第 {currentPage} 頁，共 {(execution as any).result.total_pages} 頁
                       </span>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setCurrentPage(currentPage + 1)}
-                        disabled={currentPage === execution.result.total_pages}
+                        disabled={currentPage === (execution as any).result.total_pages}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -612,8 +612,8 @@ export default function ReportExecutionPage() {
               </CardHeader>
               <CardContent>
                 <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                  {execution.logs ? (
-                    <pre>{execution.logs}</pre>
+                  {(execution as any).logs ? (
+                    <pre>{(execution as any).logs}</pre>
                   ) : (
                     <>
                       <p>[2024-01-15 10:30:00] 開始執行報表...</p>
@@ -644,9 +644,9 @@ export default function ReportExecutionPage() {
                       <div>
                         <p className="font-medium text-red-900">執行錯誤</p>
                         <p className="text-sm text-red-700 mt-1">{execution.error_message}</p>
-                        {execution.error_details && (
+                        {(execution as any).error_details && (
                           <pre className="text-xs text-red-600 mt-2 overflow-auto">
-                            {JSON.stringify(execution.error_details, null, 2)}
+                            {JSON.stringify((execution as any).error_details, null, 2)}
                           </pre>
                         )}
                       </div>

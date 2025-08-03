@@ -11,6 +11,8 @@ export interface Quote {
   delivery_terms?: string;
   total_amount: number;
   approved_amount?: number;
+  currency?: string;
+  unit_price?: number;
   remarks?: string;
   created_by?: string;
   updated_by?: string;
@@ -28,6 +30,7 @@ export interface Quote {
   updated_by_user?: User;
   approved_by_user?: User;
   template?: QuoteTemplate;
+  items?: QuoteItem[];
 }
 
 export interface QuoteVersion {

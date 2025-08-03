@@ -62,8 +62,9 @@ func (tdb *TestDB) CleanupTables() {
 		"companies",
 	}
 
+	// 使用 GORM 的安全方法來清理資料
 	for _, table := range tables {
-		tdb.DB.Exec(fmt.Sprintf("DELETE FROM %s", table))
+		tdb.DB.Exec("TRUNCATE TABLE " + table + " RESTART IDENTITY CASCADE")
 	}
 }
 

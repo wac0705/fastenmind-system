@@ -44,7 +44,7 @@ export default function SalesDashboardPage() {
 
   const { data: quoteStats } = useQuery({
     queryKey: ['quote-stats'],
-    queryFn: () => quoteService.list({ page: 1, page_size: 1 }),
+    queryFn: () => quoteService.getQuotes({ page: 1, page_size: 1 }),
   })
 
   const { data: orderStats } = useQuery({
@@ -58,7 +58,7 @@ export default function SalesDashboardPage() {
     queryFn: () => inquiryService.list({ 
       page: 1, 
       page_size: 5,
-      sales_id: user?.id 
+ 
     }),
   })
 
@@ -67,7 +67,7 @@ export default function SalesDashboardPage() {
     queryFn: () => orderService.list({ 
       page: 1, 
       page_size: 5,
-      sales_id: user?.id 
+ 
     }),
   })
 
@@ -151,7 +151,7 @@ export default function SalesDashboardPage() {
                       <div className="space-y-1">
                         <p className="font-medium">{inquiry.inquiry_no}</p>
                         <p className="text-sm text-gray-500">
-                          {inquiry.customer?.name} • {inquiry.part_no}
+                          {inquiry.customer?.name} • {(inquiry as any).product_name || '未設定'}
                         </p>
                       </div>
                       <Button
@@ -179,7 +179,7 @@ export default function SalesDashboardPage() {
                 {recentOrders?.data?.length === 0 ? (
                   <p className="text-center text-gray-500 py-4">暫無訂單記錄</p>
                 ) : (
-                  recentOrders?.data?.map((order) => (
+                  recentOrders?.data?.map((order: any) => (
                     <div key={order.id} className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="font-medium">{order.order_no}</p>

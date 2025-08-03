@@ -1,0 +1,237 @@
+syntax = "proto3";
+
+package quote.v1;
+
+option go_package = "github.com/fastenmind/quote-service/api/v1;quotev1";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// QuoteService 報價服務
+service QuoteService {
+  // CreateQuote 創建報價
+  rpc CreateQuote(CreateQuoteRequest) returns (CreateQuoteResponse);
+  
+  // GetQuote 獲取報價
+  rpc GetQuote(GetQuoteRequest) returns (Quote);
+  
+  // ListQuotes 列出報價
+  rpc ListQuotes(ListQuotesRequest) returns (ListQuotesResponse);
+  
+  // UpdateQuote 更新報價
+  rpc UpdateQuote(UpdateQuoteRequest) returns (Quote);
+  
+  // SubmitQuote 提交報價
+  rpc SubmitQuote(SubmitQuoteRequest) returns (google.protobuf.Empty);
+  
+  // ApproveQuote 批准報價
+  rpc ApproveQuote(ApproveQuoteRequest) returns (google.protobuf.Empty);
+  
+  // RejectQuote 拒絕報價
+  rpc RejectQuote(RejectQuoteRequest) returns (google.protobuf.Empty);
+  
+  // GetQuoteStatistics 獲取報價統計
+  rpc GetQuoteStatistics(GetQuoteStatisticsRequest) returns (QuoteStatistics);
+}
+
+// Quote 報價
+message Quote {
+  string id = 1;
+  string quote_number = 2;
+  string customer_id = 3;
+  string company_id = 4;
+  QuoteStatus status = 5;
+  google.protobuf.Timestamp valid_until = 6;
+  repeated QuoteItem items = 7;
+  QuoteTerms terms = 8;
+  PricingSummary pricing_summary = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  int32 version = 12;
+}
+
+// QuoteStatus 報價狀態
+enum QuoteStatus {
+  QUOTE_STATUS_UNSPECIFIED = 0;
+  QUOTE_STATUS_DRAFT = 1;
+  QUOTE_STATUS_PENDING = 2;
+  QUOTE_STATUS_APPROVED = 3;
+  QUOTE_STATUS_REJECTED = 4;
+  QUOTE_STATUS_EXPIRED = 5;
+  QUOTE_STATUS_CANCELLED = 6;
+}
+
+// QuoteItem 報價項目
+message QuoteItem {
+  string id = 1;
+  string product_id = 2;
+  string product_name = 3;
+  string specification = 4;
+  Material material = 5;
+  int32 quantity = 6;
+  double unit_price = 7;
+  double tax_rate = 8;
+  double discount_rate = 9;
+  double total_price = 10;
+  string lead_time = 11;
+  string notes = 12;
+}
+
+// Material 材料
+message Material {
+  string type = 1;
+  string grade = 2;
+  string standard = 3;
+  string finish = 4;
+  string description = 5;
+}
+
+// QuoteTerms 報價條款
+message QuoteTerms {
+  PaymentTerms payment_terms = 1;
+  DeliveryTerms delivery_terms = 2;
+  WarrantyTerms warranty_terms = 3;
+  string currency = 4;
+  double discount_percentage = 5;
+  string notes = 6;
+}
+
+// PaymentTerms 付款條款
+message PaymentTerms {
+  string type = 1;
+  int32 net_days = 2;
+  double deposit_percent = 3;
+  string description = 4;
+}
+
+// DeliveryTerms 交貨條款
+message DeliveryTerms {
+  string incoterm = 1;
+  int32 lead_time_days = 2;
+  string location = 3;
+  string description = 4;
+}
+
+// WarrantyTerms 保固條款
+message WarrantyTerms {
+  string duration = 1;
+  string type = 2;
+  string coverage = 3;
+  repeated string exclusions = 4;
+  string description = 5;
+}
+
+// PricingSummary 定價摘要
+message PricingSummary {
+  double subtotal = 1;
+  double total_tax = 2;
+  double total_discount = 3;
+  double total = 4;
+  string currency = 5;
+}
+
+// CreateQuoteRequest 創建報價請求
+message CreateQuoteRequest {
+  string customer_id = 1;
+  string company_id = 2;
+  repeated CreateQuoteItem items = 3;
+  QuoteTerms terms = 4;
+}
+
+// CreateQuoteItem 創建報價項目
+message CreateQuoteItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  string specification = 3;
+  Material material = 4;
+}
+
+// CreateQuoteResponse 創建報價響應
+message CreateQuoteResponse {
+  string id = 1;
+  string quote_number = 2;
+}
+
+// GetQuoteRequest 獲取報價請求
+message GetQuoteRequest {
+  string id = 1;
+}
+
+// ListQuotesRequest 列出報價請求
+message ListQuotesRequest {
+  string customer_id = 1;
+  string company_id = 2;
+  QuoteStatus status = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+  string sort_by = 6;
+  bool sort_desc = 7;
+}
+
+// ListQuotesResponse 列出報價響應
+message ListQuotesResponse {
+  repeated Quote quotes = 1;
+  int64 total_count = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+}
+
+// UpdateQuoteRequest 更新報價請求
+message UpdateQuoteRequest {
+  string id = 1;
+  repeated QuoteItem items = 2;
+  QuoteTerms terms = 3;
+}
+
+// SubmitQuoteRequest 提交報價請求
+message SubmitQuoteRequest {
+  string id = 1;
+}
+
+// ApproveQuoteRequest 批准報價請求
+message ApproveQuoteRequest {
+  string id = 1;
+  string approver_id = 2;
+}
+
+// RejectQuoteRequest 拒絕報價請求
+message RejectQuoteRequest {
+  string id = 1;
+  string reason = 2;
+}
+
+// GetQuoteStatisticsRequest 獲取報價統計請求
+message GetQuoteStatisticsRequest {
+  string company_id = 1;
+  google.protobuf.Timestamp start_date = 2;
+  google.protobuf.Timestamp end_date = 3;
+}
+
+// QuoteStatistics 報價統計
+message QuoteStatistics {
+  int32 total_quotes = 1;
+  map<string, int32> quotes_by_status = 2;
+  double total_value = 3;
+  double average_value = 4;
+  double conversion_rate = 5;
+  repeated CustomerStat top_customers = 6;
+  repeated ProductStat top_products = 7;
+}
+
+// CustomerStat 客戶統計
+message CustomerStat {
+  string customer_id = 1;
+  string customer_name = 2;
+  int32 quote_count = 3;
+  double total_value = 4;
+}
+
+// ProductStat 產品統計
+message ProductStat {
+  string product_id = 1;
+  string product_name = 2;
+  string product_sku = 3;
+  int32 quote_count = 4;
+  int32 total_quantity = 5;
+  double total_value = 6;
+}

@@ -755,19 +755,21 @@ func (s *TradeService) CreateExchangeRate(userID uuid.UUID, req CreateExchangeRa
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	// Deactivate previous rates for the same currency pair and type
-	existingRates, err := s.tradeRepo.GetExchangeRatesByCompany(user.CompanyID, req.FromCurrency, req.ToCurrency, req.RateType)
-	if err == nil {
-		for _, rate := range existingRates {
-			if rate.ValidDate.Before(req.ValidDate) {
-				rate.IsActive = false
-				s.tradeRepo.UpdateExchangeRate(&rate)
-			}
-		}
-	}
+	// TODO: Deactivate previous rates for the same currency pair and type
+	// existingRates, err := s.tradeRepo.GetExchangeRatesByCompany(user.CompanyID, req.FromCurrency, req.ToCurrency, req.RateType)
+	// if err == nil {
+	// 	for _, rate := range existingRates {
+	// 		if rate.ValidDate.Before(req.ValidDate) {
+	// 			rate.IsActive = false
+	// 			s.tradeRepo.UpdateExchangeRate(&rate)
+	// 		}
+	// 	}
+	// }
 
+	rateID := uuid.New()
 	exchangeRate := &models.ExchangeRate{
-		CompanyID:    user.CompanyID,
+		ID:           rateID.String(),
+		CompanyID:    user.CompanyID.String(),
 		FromCurrency: req.FromCurrency,
 		ToCurrency:   req.ToCurrency,
 		Rate:         req.Rate,
@@ -775,14 +777,14 @@ func (s *TradeService) CreateExchangeRate(userID uuid.UUID, req CreateExchangeRa
 		Source:       req.Source,
 		ValidDate:    req.ValidDate,
 		IsActive:     true,
-		CreatedBy:    userID,
+		CreatedBy:    userID.String(),
 	}
 
 	if err := s.tradeRepo.CreateExchangeRate(exchangeRate); err != nil {
 		return nil, fmt.Errorf("failed to create exchange rate: %w", err)
 	}
 
-	return s.tradeRepo.GetExchangeRate(exchangeRate.ID)
+	return s.tradeRepo.GetExchangeRate(rateID)
 }
 
 func (s *TradeService) GetLatestExchangeRate(companyID uuid.UUID, fromCurrency, toCurrency, rateType string) (*models.ExchangeRate, error) {

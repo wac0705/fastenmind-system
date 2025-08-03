@@ -57,7 +57,8 @@ import {
   Package,
   Shield,
   Calendar,
-  Flag
+  Flag,
+  BarChart3
 } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import tradeService from '@/services/trade.service'

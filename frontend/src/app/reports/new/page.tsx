@@ -183,8 +183,8 @@ export default function ReportDesignerPage() {
   const loadTemplate = async (id: string) => {
     try {
       const template = await reportService.getReportTemplate(id)
-      if (template.config) {
-        setComponents(template.config.components || [])
+      if ((template as any).config) {
+        setComponents((template as any).config.components || [])
         setFormData({
           ...formData,
           name: template.name,

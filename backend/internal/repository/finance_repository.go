@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"strings"
 	"time"
+	
 	"github.com/fastenmind/fastener-api/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -138,7 +140,10 @@ func (r *financeRepository) ListInvoices(companyID uuid.UUID, params map[string]
 	}
 	
 	if search, ok := params["search"].(string); ok && search != "" {
-		query = query.Where("invoice_no LIKE ?", "%"+search+"%")
+		// 轉義 LIKE 查詢中的特殊字符
+		escapedSearch := strings.ReplaceAll(search, "%", "\\%")
+		escapedSearch = strings.ReplaceAll(escapedSearch, "_", "\\_")
+		query = query.Where("invoice_no LIKE ?", "%"+escapedSearch+"%")
 	}
 	
 	// Count total

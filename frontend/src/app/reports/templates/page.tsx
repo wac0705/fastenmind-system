@@ -376,12 +376,12 @@ export default function ReportTemplatesPage() {
                         <TypeIcon className="h-5 w-5 text-gray-500" />
                       </div>
                       <div className="flex items-center gap-1">
-                        {template.is_favorite ? (
+                        {(template as any).is_favorite ? (
                           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                         ) : (
                           <StarOff className="h-4 w-4 text-gray-400" />
                         )}
-                        {template.is_public ? (
+                        {(template as any).is_public ? (
                           <Unlock className="h-4 w-4 text-green-500" />
                         ) : (
                           <Lock className="h-4 w-4 text-gray-400" />
@@ -408,7 +408,7 @@ export default function ReportTemplatesPage() {
 
                       {template.tags && template.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1">
-                          {template.tags.map((tag: string, index: number) => (
+                          {(Array.isArray(template.tags) ? template.tags : []).map((tag: string, index: number) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
@@ -417,7 +417,7 @@ export default function ReportTemplatesPage() {
                       )}
 
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2">
-                        <span>使用 {template.use_count || 0} 次</span>
+                        <span>使用 {template.usage_count || 0} 次</span>
                         <span>{format(new Date(template.created_at), 'yyyy/MM/dd')}</span>
                       </div>
 
@@ -436,7 +436,7 @@ export default function ReportTemplatesPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {!template.is_system && (
+                        {!(template as any).is_system && (
                           <>
                             <Button
                               size="sm"

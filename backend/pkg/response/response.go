@@ -58,3 +58,36 @@ func Created(c echo.Context, data interface{}) error {
 func NoContent(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
+
+// PaginationResponse structure for paginated responses
+type PaginationResponse struct {
+	Success    bool        `json:"success"`
+	Message    string      `json:"message,omitempty"`
+	Data       interface{} `json:"data,omitempty"`
+	Error      string      `json:"error,omitempty"`
+	Pagination Pagination  `json:"pagination"`
+}
+
+// Pagination structure
+type Pagination struct {
+	Total       int `json:"total"`
+	Page        int `json:"page"`
+	Limit       int `json:"limit"`
+	TotalPages  int `json:"total_pages"`
+}
+
+// SuccessWithPagination sends a success response with pagination
+func SuccessWithPagination(c echo.Context, message string, data interface{}, total, page, limit int) error {
+	totalPages := (total + limit - 1) / limit
+	return c.JSON(http.StatusOK, PaginationResponse{
+		Success: true,
+		Message: message,
+		Data:    data,
+		Pagination: Pagination{
+			Total:      total,
+			Page:       page,
+			Limit:      limit,
+			TotalPages: totalPages,
+		},
+	})
+}

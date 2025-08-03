@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"strings"
+	
 	"github.com/fastenmind/fastener-api/internal/models"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -235,8 +237,13 @@ func (r *QuoteManagementRepository) GetQuotesByInquiry(inquiryID uuid.UUID) ([]m
 // SearchQuotes 搜尋報價單
 func (r *QuoteManagementRepository) SearchQuotes(companyID uuid.UUID, keyword string) ([]models.Quote, error) {
 	var quotes []models.Quote
+	// 轉義 LIKE 查詢中的特殊字符
+	escapedKeyword := strings.ReplaceAll(keyword, "%", "\\%")
+	escapedKeyword = strings.ReplaceAll(escapedKeyword, "_", "\\_")
+	likePattern := "%" + escapedKeyword + "%"
+	
 	err := r.db.Where("company_id = ?", companyID).
-		Where("quote_no LIKE ? OR remarks LIKE ?", "%"+keyword+"%", "%"+keyword+"%").
+		Where("quote_no LIKE ? OR remarks LIKE ?", likePattern, likePattern).
 		Preload("Customer").
 		Limit(20).
 		Find(&quotes).Error

@@ -802,7 +802,7 @@ class ReportService {
     return response.data
   }
 
-  async exportReport(reportType: string, dateRange: string): Promise<Blob> {
+  async exportReportByType(reportType: string, dateRange: string): Promise<Blob> {
     const response = await api.get(`/reports/export/${reportType}`, {
       params: { date_range: dateRange },
       responseType: 'blob'

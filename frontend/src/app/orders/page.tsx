@@ -320,7 +320,7 @@ export default function OrdersPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    ordersData?.data.map((order) => (
+                    ordersData?.data.map((order: any) => (
                       <TableRow key={order.id} className="hover:bg-gray-50">
                         <TableCell className="font-medium">{order.order_no}</TableCell>
                         <TableCell>{order.po_number}</TableCell>

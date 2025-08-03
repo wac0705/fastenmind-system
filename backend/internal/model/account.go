@@ -20,6 +20,11 @@ type Account struct {
 	IsEmailVerified bool       `json:"is_email_verified" db:"is_email_verified"`
 	LastLoginAt     *time.Time `json:"last_login_at,omitempty" db:"last_login_at"`
 	
+	// Engineer specific fields
+	Department     string   `json:"department,omitempty" db:"department"`
+	Expertise      []string `json:"expertise,omitempty" db:"expertise"`
+	MaxAssignments int      `json:"max_assignments,omitempty" db:"max_assignments"`
+	
 	// Relations
 	Company *Company `json:"company,omitempty"`
 }

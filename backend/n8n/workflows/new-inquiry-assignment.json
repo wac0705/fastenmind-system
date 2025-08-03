@@ -1,0 +1,235 @@
+{
+  "name": "FastenMind - New Inquiry Auto Assignment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-inquiry",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - New Inquiry",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "fastenmind-new-inquiry"
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/engineers/available",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "company_id",
+              "value": "={{$json[\"body\"][\"company_id\"]}}"
+            },
+            {
+              "name": "expertise",
+              "value": "={{$json[\"body\"][\"product_category\"]}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-available-engineers",
+      "name": "Get Available Engineers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find the best engineer based on workload and expertise\nconst engineers = $input.all()[0].json.engineers;\nconst inquiry = $input.all()[0].json.body;\n\n// Sort engineers by workload (ascending) and expertise match\nconst sortedEngineers = engineers.sort((a, b) => {\n  // Prioritize engineers with matching expertise\n  const aMatch = a.expertise.includes(inquiry.product_category) ? 1 : 0;\n  const bMatch = b.expertise.includes(inquiry.product_category) ? 1 : 0;\n  \n  if (aMatch !== bMatch) {\n    return bMatch - aMatch;\n  }\n  \n  // Then sort by workload\n  return a.active_inquiries - b.active_inquiries;\n});\n\n// Select the best engineer\nconst selectedEngineer = sortedEngineers[0];\n\nreturn [{\n  json: {\n    inquiry_id: inquiry.id,\n    engineer_id: selectedEngineer.id,\n    engineer_name: selectedEngineer.name,\n    engineer_email: selectedEngineer.email,\n    assignment_reason: `Assigned based on expertise match (${selectedEngineer.expertise.join(', ')}) and workload (${selectedEngineer.active_inquiries} active inquiries)`\n  }\n}];"
+      },
+      "id": "select-engineer",
+      "name": "Select Best Engineer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/inquiries/{{$json[\"inquiry_id\"]}}/assign",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "engineer_id",
+              "value": "={{$json[\"engineer_id\"]}}"
+            },
+            {
+              "name": "assignment_type",
+              "value": "auto"
+            },
+            {
+              "name": "assignment_reason",
+              "value": "={{$json[\"assignment_reason\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "assign-engineer",
+      "name": "Assign Engineer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "={{$json[\"engineer_email\"]}}",
+        "subject": "New Inquiry Assigned - {{$json[\"body\"][\"inquiry_no\"]}}",
+        "html": true,
+        "htmlBody": "=<h2>New Inquiry Assignment</h2>\n<p>Dear {{$json[\"engineer_name\"]}},</p>\n<p>A new inquiry has been assigned to you:</p>\n<ul>\n<li><strong>Inquiry No:</strong> {{$json[\"body\"][\"inquiry_no\"]}}</li>\n<li><strong>Customer:</strong> {{$json[\"body\"][\"customer_name\"]}}</li>\n<li><strong>Product:</strong> {{$json[\"body\"][\"product_name\"]}}</li>\n<li><strong>Category:</strong> {{$json[\"body\"][\"product_category\"]}}</li>\n<li><strong>Quantity:</strong> {{$json[\"body\"][\"quantity\"]}} {{$json[\"body\"][\"unit\"]}}</li>\n<li><strong>Target Date:</strong> {{$json[\"body\"][\"target_date\"]}}</li>\n</ul>\n<p>Please review the inquiry details and provide a quotation at your earliest convenience.</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/inquiries/{{$json[\"inquiry_id\"]}}\">View Inquiry Details</a></p>\n<p>Best regards,<br>FastenMind System</p>",
+        "options": {}
+      },
+      "id": "notify-engineer",
+      "name": "Notify Engineer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "inquiry_auto_assigned"
+            },
+            {
+              "name": "entity_type",
+              "value": "inquiry"
+            },
+            {
+              "name": "entity_id",
+              "value": "={{$json[\"inquiry_id\"]}}"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify({engineer_id: $json[\"engineer_id\"], assignment_reason: $json[\"assignment_reason\"]})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-assignment",
+      "name": "Log Assignment Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - New Inquiry": {
+      "main": [
+        [
+          {
+            "node": "Get Available Engineers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Available Engineers": {
+      "main": [
+        [
+          {
+            "node": "Select Best Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Best Engineer": {
+      "main": [
+        [
+          {
+            "node": "Assign Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign Engineer": {
+      "main": [
+        [
+          {
+            "node": "Notify Engineer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Engineer": {
+      "main": [
+        [
+          {
+            "node": "Log Assignment Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "3",
+      "name": "inquiry-management"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "def456"
+}

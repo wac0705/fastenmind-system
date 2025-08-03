@@ -47,12 +47,13 @@ import {
   Layout,
   Code,
   FileJson,
-  FileCsv,
+  FileText as FileCsv,
   FileSpreadsheet,
   FileImage,
   User,
   Building,
-  Hash
+  Hash,
+  Activity
 } from 'lucide-react'
 import reportService from '@/services/report.service'
 import { format } from 'date-fns'
@@ -488,7 +489,7 @@ export default function ReportDetailPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium">
-                              執行 #{execution.execution_no}
+                              執行 #{execution.id.slice(-8)}
                             </p>
                             {getExecutionStatusBadge(execution.status)}
                           </div>
@@ -528,17 +529,17 @@ export default function ReportDetailPage() {
                   </div>
                   <input
                     type="checkbox"
-                    checked={report.schedule_config?.enabled || false}
+                    checked={(report as any).schedule_config?.enabled || false}
                     className="toggle"
                   />
                 </div>
                 <Separator />
-                {report.schedule_config?.enabled && (
+                {(report as any).schedule_config?.enabled && (
                   <>
                     <div className="grid gap-4">
                       <div className="grid gap-2">
                         <Label>執行頻率</Label>
-                        <Select defaultValue={report.schedule_config?.frequency || 'daily'}>
+                        <Select defaultValue={(report as any).schedule_config?.frequency || 'daily'}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -554,14 +555,14 @@ export default function ReportDetailPage() {
                         <Label>執行時間</Label>
                         <Input
                           type="time"
-                          defaultValue={report.schedule_config?.time || '08:00'}
+                          defaultValue={(report as any).schedule_config?.time || '08:00'}
                         />
                       </div>
                       <div className="grid gap-2">
                         <Label>收件人</Label>
                         <Input
                           placeholder="輸入電子郵件，多個收件人用逗號分隔"
-                          defaultValue={report.schedule_config?.recipients?.join(', ') || ''}
+                          defaultValue={(report as any).schedule_config?.recipients?.join(', ') || ''}
                         />
                       </div>
                     </div>
@@ -588,7 +589,7 @@ export default function ReportDetailPage() {
                   </div>
                   <input
                     type="checkbox"
-                    checked={report.permissions?.is_public || false}
+                    checked={(report as any).permissions?.is_public || false}
                     className="toggle"
                   />
                 </div>
@@ -599,7 +600,7 @@ export default function ReportDetailPage() {
                     <p className="text-sm text-gray-500 mb-2">這些使用者可以檢視報表</p>
                     <Input placeholder="輸入使用者名稱或電子郵件" />
                     <div className="mt-2 space-y-2">
-                      {report.permissions?.view_users?.map((user, index) => (
+                      {(report as any).permissions?.view_users?.map((user: any, index: number) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded">
                           <span>{user}</span>
                           <Button variant="ghost" size="sm">
@@ -614,7 +615,7 @@ export default function ReportDetailPage() {
                     <p className="text-sm text-gray-500 mb-2">這些使用者可以編輯報表</p>
                     <Input placeholder="輸入使用者名稱或電子郵件" />
                     <div className="mt-2 space-y-2">
-                      {report.permissions?.edit_users?.map((user, index) => (
+                      {(report as any).permissions?.edit_users?.map((user: any, index: number) => (
                         <div key={index} className="flex items-center justify-between p-2 border rounded">
                           <span>{user}</span>
                           <Button variant="ghost" size="sm">

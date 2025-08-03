@@ -49,14 +49,14 @@ export default function NewQuotePage() {
   // Fetch inquiry details if inquiry_id is provided
   const { data: inquiry } = useQuery({
     queryKey: ['inquiry', inquiryId],
-    queryFn: () => inquiryService.getInquiry(inquiryId!),
+    queryFn: () => inquiryService.get(inquiryId!),
     enabled: !!inquiryId,
   });
 
   // Fetch customers
   const { data: customers } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => customerService.getCustomers({ page_size: 100 }),
+    queryFn: () => customerService.list({ page_size: 100 }),
   });
 
   // Fetch quote templates
@@ -76,10 +76,10 @@ export default function NewQuotePage() {
       // Pre-fill first item with inquiry details
       if (formData.items.length === 0) {
         setCurrentItem({
-          product_name: inquiry.product_name || '',
-          product_specs: inquiry.product_specs || '',
-          quantity: inquiry.quantity || 1,
-          unit: inquiry.unit || 'PCS',
+          product_name: (inquiry as any).product_name || '',
+          product_specs: (inquiry as any).product_specs || '',
+          quantity: (inquiry as any).quantity || 1,
+          unit: (inquiry as any).unit || 'PCS',
           unit_price: 0,
           notes: ''
         });
@@ -135,7 +135,7 @@ export default function NewQuotePage() {
 
     setFormData(prev => ({
       ...prev,
-      terms: [...prev.terms, { ...currentTerm, sort_order: prev.terms.length + 1 }]
+      terms: [...(prev.terms || []), { ...currentTerm, sort_order: (prev.terms?.length || 0) + 1 }]
     }));
 
     // Reset current term
@@ -149,7 +149,7 @@ export default function NewQuotePage() {
   const handleRemoveTerm = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      terms: prev.terms.filter((_, i) => i !== index)
+      terms: (prev.terms || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -491,9 +491,9 @@ export default function NewQuotePage() {
                 </div>
 
                 {/* 條款列表 */}
-                {formData.terms.length > 0 && (
+                {(formData.terms?.length || 0) > 0 && (
                   <div className="space-y-3">
-                    {formData.terms.map((term, index) => (
+                    {formData.terms?.map((term, index) => (
                       <div key={index} className="border rounded-lg p-4 flex justify-between items-start">
                         <div className="flex-1">
                           <h5 className="font-medium text-sm text-gray-700 mb-1">{term.term_type}</h5>
@@ -525,10 +525,10 @@ export default function NewQuotePage() {
             </button>
             <button
               type="submit"
-              disabled={createQuoteMutation.isLoading}
+              disabled={createQuoteMutation.isPending}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
             >
-              {createQuoteMutation.isLoading ? (
+              {createQuoteMutation.isPending ? (
                 <>
                   <LoadingSpinner className="h-4 w-4" />
                   建立中...

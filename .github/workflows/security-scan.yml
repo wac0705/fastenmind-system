@@ -1,0 +1,348 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  # Static Application Security Testing (SAST)
+  sast:
+    name: SAST Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+    
+    # Run custom security scanner
+    - name: Run Custom Security Scanner
+      run: |
+        cd backend
+        go run cmd/security-scanner/main.go -config security-scan.yaml
+      continue-on-error: true
+    
+    # CodeQL Analysis
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: go, javascript
+        queries: security-extended
+    
+    - name: Build for CodeQL
+      run: |
+        cd backend
+        go build ./...
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:go"
+    
+    # Semgrep
+    - name: Run Semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/golang
+          p/owasp-top-ten
+          p/jwt
+        generateSarif: true
+    
+    - name: Upload Semgrep results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: semgrep.sarif
+      if: always()
+    
+    # Gosec - Go Security Checker
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: '-fmt sarif -out gosec-results.sarif ./...'
+        working-directory: backend
+    
+    - name: Upload Gosec results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: backend/gosec-results.sarif
+      if: always()
+    
+    # Nancy - Vulnerability Scanner for Go
+    - name: Run Nancy
+      run: |
+        cd backend
+        go list -json -deps ./... | docker run --rm -i sonatypecorp/nancy:latest sleuth
+      continue-on-error: true
+    
+    # Trivy - Vulnerability Scanner
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: 'backend'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+    
+    - name: Upload Trivy results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: trivy-results.sarif
+      if: always()
+
+  # Dependency Scanning
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    # Go Modules
+    - name: Run Go Mod Security Check
+      run: |
+        cd backend
+        go list -json -m all | nancy sleuth
+      continue-on-error: true
+    
+    # Snyk
+    - name: Run Snyk to check for vulnerabilities
+      uses: snyk/actions/golang@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high
+        workdir: backend
+      continue-on-error: true
+    
+    # OWASP Dependency Check
+    - name: Run OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'fastenmind-backend'
+        path: './backend'
+        format: 'ALL'
+        args: >
+          --enableRetired
+          --enableExperimental
+      continue-on-error: true
+    
+    - name: Upload OWASP results
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-check-report
+        path: reports
+      if: always()
+
+  # Container Scanning
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Docker image
+      run: |
+        cd backend
+        docker build -t fastenmind-backend:scan .
+    
+    # Trivy Container Scan
+    - name: Run Trivy container scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'fastenmind-backend:scan'
+        format: 'sarif'
+        output: 'trivy-container.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy container results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: trivy-container.sarif
+      if: always()
+    
+    # Grype Container Scan
+    - name: Run Grype container scan
+      uses: anchore/scan-action@v3
+      with:
+        image: 'fastenmind-backend:scan'
+        fail-build: false
+        severity-cutoff: high
+    
+    # Docker Scout
+    - name: Docker Scout CVEs
+      uses: docker/scout-action@v1
+      with:
+        command: cves
+        image: 'fastenmind-backend:scan'
+        only-severities: critical,high
+        exit-code: false
+
+  # License Compliance
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check licenses
+      uses: fossa-contrib/fossa-action@v2
+      with:
+        api-key: ${{ secrets.FOSSA_API_KEY }}
+        cmd: analyze
+        options: --branch ${{ github.ref_name }}
+    
+    - name: Run license test
+      uses: fossa-contrib/fossa-action@v2
+      with:
+        api-key: ${{ secrets.FOSSA_API_KEY }}
+        cmd: test
+
+  # Secret Scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    # Gitleaks
+    - name: Run Gitleaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    # TruffleHog
+    - name: TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+
+  # Infrastructure as Code Scanning
+  iac-scan:
+    name: IaC Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    # Checkov
+    - name: Run Checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: all
+        output_format: sarif
+        output_file_path: checkov.sarif
+        skip_check: CKV_DOCKER_2,CKV_DOCKER_3
+    
+    - name: Upload Checkov results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: checkov.sarif
+      if: always()
+    
+    # Terrascan
+    - name: Run Terrascan
+      uses: tenable/terrascan-action@main
+      with:
+        iac_type: 'k8s'
+        iac_version: 'v1'
+        policy_type: 'k8s'
+        only_warn: true
+
+  # DAST (Dynamic Application Security Testing)
+  dast:
+    name: DAST Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Start application
+      run: |
+        cd backend
+        docker-compose up -d
+        sleep 30
+    
+    # OWASP ZAP
+    - name: OWASP ZAP Scan
+      uses: zaproxy/action-full-scan@v0.7.0
+      with:
+        target: 'http://localhost:8080'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a'
+    
+    - name: Stop application
+      run: |
+        cd backend
+        docker-compose down
+      if: always()
+
+  # Security Report
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [sast, dependency-scan, container-scan, secret-scan, iac-scan]
+    if: always()
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+    
+    - name: Generate consolidated report
+      run: |
+        echo "# Security Scan Report" > security-report.md
+        echo "Date: $(date)" >> security-report.md
+        echo "Branch: ${{ github.ref_name }}" >> security-report.md
+        echo "Commit: ${{ github.sha }}" >> security-report.md
+        echo "" >> security-report.md
+        echo "## Summary" >> security-report.md
+        # Add summary of all scans
+    
+    - name: Upload security report
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-report
+        path: security-report.md
+    
+    - name: Comment PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('security-report.md', 'utf8');
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: report
+          });

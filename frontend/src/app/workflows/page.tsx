@@ -162,9 +162,9 @@ export default function WorkflowsPage() {
         workflow_id: '',
         trigger_type: template.trigger_type,
         trigger_config: template.trigger_type === 'event' 
-          ? { event: template.event }
+          ? { event: (template as any).event }
           : template.trigger_type === 'schedule'
-          ? { cron: template.schedule }
+          ? { cron: (template as any).schedule }
           : {},
       })
     }
@@ -548,7 +548,7 @@ export default function WorkflowsPage() {
                   <Label htmlFor="cron">Cron 表達式</Label>
                   <Input
                     id="cron"
-                    value={formData.trigger_config.cron || ''}
+                    value={(formData.trigger_config as any).cron || ''}
                     onChange={(e) => setFormData({ 
                       ...formData, 
                       trigger_config: { ...formData.trigger_config, cron: e.target.value }
@@ -562,7 +562,7 @@ export default function WorkflowsPage() {
                 <div className="grid gap-2">
                   <Label htmlFor="event">事件類型</Label>
                   <Select
-                    value={formData.trigger_config.event || ''}
+                    value={(formData.trigger_config as any).event || ''}
                     onValueChange={(value) => setFormData({ 
                       ...formData, 
                       trigger_config: { ...formData.trigger_config, event: value }

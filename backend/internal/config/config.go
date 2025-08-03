@@ -14,6 +14,9 @@ type Config struct {
 	CORS     CORSConfig
 	Upload   UploadConfig
 	Email    EmailConfig
+	Messaging MessagingConfig
+	Tracing   TracingConfig
+	CQRS      CQRSConfig
 }
 
 type ServerConfig struct {
@@ -63,7 +66,7 @@ type EmailConfig struct {
 }
 
 func New() *Config {
-	return &Config{
+	cfg := &Config{
 		Server: ServerConfig{
 			Port:        getEnv("SERVER_PORT", "8080"),
 			Environment: getEnv("SERVER_ENV", "development"),
@@ -104,6 +107,11 @@ func New() *Config {
 			FromAddress:  getEnv("SMTP_FROM", "noreply@fastenmind.com"),
 		},
 	}
+	
+	// Load messaging and other configs
+	cfg.LoadMessagingConfig()
+	
+	return cfg
 }
 
 func getEnv(key, defaultValue string) string {

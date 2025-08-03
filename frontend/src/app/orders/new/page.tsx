@@ -60,9 +60,9 @@ export default function NewOrderPage() {
     if (quote) {
       setFormData(prev => ({
         ...prev,
-        quantity: quote.inquiry?.quantity || 0,
+        quantity: 0,
         payment_terms: quote.payment_terms || 'NET30',
-        shipping_address: quote.customer?.address || '',
+        shipping_address: '',
       }))
     }
   }, [quote])
@@ -127,7 +127,7 @@ export default function NewOrderPage() {
 
   const calculateTotal = () => {
     if (quote && formData.quantity) {
-      return quote.unit_price * formData.quantity
+      return quote.total_amount
     }
     return 0
   }
@@ -174,7 +174,7 @@ export default function NewOrderPage() {
                   <SelectContent>
                     {availableQuotes?.data.map((quote) => (
                       <SelectItem key={quote.id} value={quote.id}>
-                        {quote.quote_no} - {quote.customer?.name} ({quote.currency} {quote.total_amount.toFixed(2)})
+                        {quote.quote_no} - {quote.customer?.name} ({quote.total_amount.toFixed(2)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -204,11 +204,13 @@ export default function NewOrderPage() {
                   </div>
                   <div>
                     <Label className="text-gray-500">料號</Label>
-                    <p className="font-medium">{quote.inquiry?.part_no}</p>
+                    <p className="font-medium">{quote.items?.[0]?.product_name || '-'}</p>
                   </div>
                   <div>
                     <Label className="text-gray-500">單價</Label>
-                    <p className="font-medium">{quote.currency} {quote.unit_price.toFixed(4)}</p>
+                    <p className="font-medium">
+                      {quote.currency || 'USD'} {quote.unit_price?.toFixed(4) || quote.items?.[0]?.unit_price?.toFixed(4) || '0.0000'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -259,7 +261,7 @@ export default function NewOrderPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">訂單總額</span>
                     <span className="text-xl font-semibold">
-                      {quote.currency} {calculateTotal().toLocaleString()}
+                      {quote.currency || 'USD'} {calculateTotal().toLocaleString()}
                     </span>
                   </div>
                 </div>

@@ -73,17 +73,6 @@ export default function CustomersPage() {
     is_active: true,
   })
 
-  // Check for edit parameter in URL
-  useEffect(() => {
-    const editId = searchParams.get('edit')
-    if (editId && data?.data) {
-      const customerToEdit = data.data.find(c => c.id === editId)
-      if (customerToEdit) {
-        handleEdit(customerToEdit)
-      }
-    }
-  }, [searchParams, data])
-
   // Fetch customers
   const { data, isLoading } = useQuery({
     queryKey: ['customers', currentPage, searchTerm, countryFilter],
@@ -106,6 +95,17 @@ export default function CustomersPage() {
     queryKey: ['currencies'],
     queryFn: () => customerService.getCurrencyOptions(),
   })
+
+  // Check for edit parameter in URL
+  useEffect(() => {
+    const editId = searchParams.get('edit')
+    if (editId && data?.data) {
+      const customerToEdit = data.data.find(c => c.id === editId)
+      if (customerToEdit) {
+        handleEdit(customerToEdit)
+      }
+    }
+  }, [searchParams, data])
 
   // Create mutation
   const createMutation = useMutation({

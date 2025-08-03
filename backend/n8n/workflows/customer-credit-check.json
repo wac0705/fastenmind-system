@@ -1,0 +1,337 @@
+{
+  "name": "FastenMind - Customer Credit Check",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "order-created",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "webhook-order",
+      "name": "Webhook - Order Created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "fastenmind-order-credit-check"
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/customers/{{$json[\"body\"][\"customer_id\"]}}/credit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-credit-info",
+      "name": "Get Customer Credit Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyze credit status\nconst order = $input.all()[0].json.body;\nconst credit = $input.all()[0].json;\n\nconst orderTotal = order.total_amount;\nconst creditLimit = credit.credit_limit;\nconst currentBalance = credit.current_balance;\nconst availableCredit = creditLimit - currentBalance;\nconst paymentHistory = credit.payment_history;\n\n// Check payment history\nconst overduePayments = paymentHistory.filter(p => p.status === 'overdue').length;\nconst avgDaysToPay = paymentHistory.reduce((sum, p) => sum + (p.days_to_pay || 0), 0) / paymentHistory.length;\n\n// Credit decision logic\nlet creditStatus = 'approved';\nlet holdReason = null;\nlet requiresApproval = false;\n\nif (orderTotal > availableCredit) {\n  creditStatus = 'exceeded';\n  holdReason = 'Order exceeds available credit limit';\n  requiresApproval = true;\n} else if (overduePayments > 0) {\n  creditStatus = 'hold';\n  holdReason = `Customer has ${overduePayments} overdue payments`;\n  requiresApproval = true;\n} else if (avgDaysToPay > 60) {\n  creditStatus = 'review';\n  holdReason = 'Average payment time exceeds 60 days';\n  requiresApproval = true;\n} else if (orderTotal > creditLimit * 0.8) {\n  creditStatus = 'warning';\n  holdReason = 'Order uses more than 80% of credit limit';\n}\n\nreturn [{\n  json: {\n    order_id: order.id,\n    customer_id: order.customer_id,\n    customer_name: order.customer_name,\n    order_total: orderTotal,\n    credit_limit: creditLimit,\n    available_credit: availableCredit,\n    credit_status: creditStatus,\n    hold_reason: holdReason,\n    requires_approval: requiresApproval,\n    overdue_payments: overduePayments,\n    avg_days_to_pay: Math.round(avgDaysToPay)\n  }\n}];"
+      },
+      "id": "analyze-credit",
+      "name": "Analyze Credit Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"requires_approval\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-approval",
+      "name": "Requires Approval?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/orders/{{$json[\"order_id\"]}}/hold",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "PUT",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "hold_type",
+              "value": "credit"
+            },
+            {
+              "name": "hold_reason",
+              "value": "={{$json[\"hold_reason\"]}}"
+            },
+            {
+              "name": "credit_status",
+              "value": "={{$json[\"credit_status\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "hold-order",
+      "name": "Put Order on Hold",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "notification_list",
+              "value": "={{$json[\"credit_status\"] === 'exceeded' ? 'finance.manager@fastenmind.com,sales.manager@fastenmind.com' : 'sales.team@fastenmind.com'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-recipients",
+      "name": "Set Notification Recipients",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "credit@fastenmind.com",
+        "toEmail": "={{$json[\"notification_list\"]}}",
+        "subject": "Credit Hold - Order {{$json[\"order_id\"]}} Requires Approval",
+        "html": true,
+        "htmlBody": "=<h2>Order Credit Hold Notification</h2>\n<p>An order has been placed on credit hold and requires your attention:</p>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><td><strong>Order ID:</strong></td><td>{{$json[\"order_id\"]}}</td></tr>\n<tr><td><strong>Customer:</strong></td><td>{{$json[\"customer_name\"]}}</td></tr>\n<tr><td><strong>Order Total:</strong></td><td>${{$json[\"order_total\"].toLocaleString()}}</td></tr>\n<tr><td><strong>Credit Limit:</strong></td><td>${{$json[\"credit_limit\"].toLocaleString()}}</td></tr>\n<tr><td><strong>Available Credit:</strong></td><td>${{$json[\"available_credit\"].toLocaleString()}}</td></tr>\n<tr><td><strong>Hold Reason:</strong></td><td style=\"color: red;\">{{$json[\"hold_reason\"]}}</td></tr>\n</table>\n<h3>Customer Credit Metrics:</h3>\n<ul>\n<li>Overdue Payments: {{$json[\"overdue_payments\"]}}</li>\n<li>Average Days to Pay: {{$json[\"avg_days_to_pay\"]}}</li>\n</ul>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/orders/{{$json[\"order_id\"]}}/credit-approval\">Review and Approve</a></p>\n<p>Please review this order and take appropriate action.</p>\n<p>Best regards,<br>FastenMind Credit Department</p>",
+        "options": {}
+      },
+      "id": "send-hold-notification",
+      "name": "Send Hold Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/orders/{{$json[\"order_id\"]}}/credit-check",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "credit_status",
+              "value": "={{$json[\"credit_status\"]}}"
+            },
+            {
+              "name": "credit_limit",
+              "value": "={{$json[\"credit_limit\"]}}"
+            },
+            {
+              "name": "available_credit",
+              "value": "={{$json[\"available_credit\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-order-credit",
+      "name": "Update Order Credit Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "credit_check_completed"
+            },
+            {
+              "name": "entity_type",
+              "value": "order"
+            },
+            {
+              "name": "entity_id",
+              "value": "={{$json[\"order_id\"]}}"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify({credit_status: $json[\"credit_status\"], requires_approval: $json[\"requires_approval\"]})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-credit-check",
+      "name": "Log Credit Check Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 400]
+    }
+  ],
+  "connections": {
+    "Webhook - Order Created": {
+      "main": [
+        [
+          {
+            "node": "Get Customer Credit Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Customer Credit Info": {
+      "main": [
+        [
+          {
+            "node": "Analyze Credit Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Credit Status": {
+      "main": [
+        [
+          {
+            "node": "Requires Approval?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Requires Approval?": {
+      "main": [
+        [
+          {
+            "node": "Put Order on Hold",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Order Credit Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Put Order on Hold": {
+      "main": [
+        [
+          {
+            "node": "Set Notification Recipients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Notification Recipients": {
+      "main": [
+        [
+          {
+            "node": "Send Hold Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Hold Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Credit Check Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Order Credit Status": {
+      "main": [
+        [
+          {
+            "node": "Log Credit Check Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "7",
+      "name": "credit-management"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "pqr678"
+}

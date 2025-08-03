@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 資料庫
+  postgres:
+    image: postgres:15-alpine
+    container_name: fastenmind-postgres
+    environment:
+      POSTGRES_USER: fastenmind
+      POSTGRES_PASSWORD: fastenmind123
+      POSTGRES_DB: fastenmind_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fastenmind-network
+
+  # Redis 快取
+  redis:
+    image: redis:7-alpine
+    container_name: fastenmind-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fastenmind-network
+
+  # RabbitMQ 訊息佇列
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: fastenmind-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: fastenmind
+      RABBITMQ_DEFAULT_PASS: fastenmind123
+    ports:
+      - "5672:5672"     # AMQP port
+      - "15672:15672"   # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - fastenmind-network
+
+  # Jaeger 分散式追蹤
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: fastenmind-jaeger
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: :9411
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "5775:5775/udp"   # Zipkin/Thrift
+      - "6831:6831/udp"   # Thrift compact
+      - "6832:6832/udp"   # Thrift binary
+      - "5778:5778"       # Configs
+      - "16686:16686"     # Web UI
+      - "14268:14268"     # HTTP collector
+      - "14269:14269"     # Health check
+      - "4317:4317"       # OTLP gRPC
+      - "4318:4318"       # OTLP HTTP
+    networks:
+      - fastenmind-network
+
+  # N8N 工作流自動化
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: fastenmind-n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=fastenmind123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=fastenmind
+      - DB_POSTGRESDB_PASSWORD=fastenmind123
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres
+    networks:
+      - fastenmind-network
+
+  # Prometheus 監控
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: fastenmind-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - fastenmind-network
+
+  # Grafana 視覺化
+  grafana:
+    image: grafana/grafana:10.1.5
+    container_name: fastenmind-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=fastenmind123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - fastenmind-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  n8n_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  fastenmind-network:
+    driver: bridge

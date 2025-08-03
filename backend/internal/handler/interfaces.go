@@ -8,7 +8,7 @@ import (
 // Placeholder handlers for compilation
 type AccountHandler struct{}
 type CompanyHandler struct{}
-type CustomerHandler struct{}
+// CustomerHandler is defined in customer_handler.go
 type InquiryHandler struct{}
 type ProcessHandler struct{}
 type EquipmentHandler struct{}
@@ -28,12 +28,6 @@ func (h *CompanyHandler) Create(c echo.Context) error { return nil }
 func (h *CompanyHandler) Get(c echo.Context) error { return nil }
 func (h *CompanyHandler) Update(c echo.Context) error { return nil }
 func (h *CompanyHandler) Delete(c echo.Context) error { return nil }
-
-func (h *CustomerHandler) List(c echo.Context) error { return nil }
-func (h *CustomerHandler) Create(c echo.Context) error { return nil }
-func (h *CustomerHandler) Get(c echo.Context) error { return nil }
-func (h *CustomerHandler) Update(c echo.Context) error { return nil }
-func (h *CustomerHandler) Delete(c echo.Context) error { return nil }
 
 func (h *InquiryHandler) List(c echo.Context) error { return nil }
 func (h *InquiryHandler) Create(c echo.Context) error { return nil }
@@ -71,7 +65,7 @@ func (h *ComplianceHandler) ValidateDocuments(c echo.Context) error { return nil
 // Placeholder constructors
 func NewAccountHandler(svc service.AccountService) *AccountHandler { return &AccountHandler{} }
 func NewCompanyHandler(svc service.CompanyService) *CompanyHandler { return &CompanyHandler{} }
-func NewCustomerHandler(svc service.CustomerService) *CustomerHandler { return &CustomerHandler{} }
+// NewCustomerHandler is defined in customer_handler.go
 func NewInquiryHandler(svc service.InquiryService) *InquiryHandler { return &InquiryHandler{} }
 func NewProcessHandler(svc service.ProcessService) *ProcessHandler { return &ProcessHandler{} }
 func NewEquipmentHandler(svc service.EquipmentService) *EquipmentHandler { return &EquipmentHandler{} }

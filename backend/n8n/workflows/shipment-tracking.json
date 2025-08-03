@@ -1,0 +1,305 @@
+{
+  "name": "FastenMind - Shipment Tracking Updates",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule - Every 4 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/shipments/active",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-active-shipments",
+      "name": "Get Active Shipments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split into Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Query carrier API for tracking updates\nconst shipment = $input.all()[0].json;\nconst carrierAPIs = {\n  'DHL': 'https://api.dhl.com/track/shipments',\n  'FedEx': 'https://apis.fedex.com/track/v1/trackingnumbers',\n  'UPS': 'https://onlinetools.ups.com/track/v1/details',\n  'Maersk': 'https://api.maersk.com/track'\n};\n\n// Simulate API response (in production, make actual API calls)\nconst trackingUpdate = {\n  shipment_id: shipment.id,\n  tracking_number: shipment.tracking_number,\n  carrier: shipment.carrier,\n  current_status: shipment.status,\n  new_status: 'in_transit', // Would come from carrier API\n  current_location: 'Shanghai Port',\n  estimated_arrival: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),\n  events: [\n    {\n      timestamp: new Date().toISOString(),\n      location: 'Shanghai Port',\n      description: 'Departed from port',\n      status: 'in_transit'\n    }\n  ],\n  has_update: true\n};\n\nreturn [{ json: trackingUpdate }];"
+      },
+      "id": "query-carrier",
+      "name": "Query Carrier API",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"has_update\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-update",
+      "name": "Has Update?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/shipments/{{$json[\"shipment_id\"]}}/tracking",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "={{$json[\"new_status\"]}}"
+            },
+            {
+              "name": "location",
+              "value": "={{$json[\"current_location\"]}}"
+            },
+            {
+              "name": "estimated_arrival",
+              "value": "={{$json[\"estimated_arrival\"]}}"
+            },
+            {
+              "name": "tracking_events",
+              "value": "={{$json[\"events\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-tracking",
+      "name": "Update Tracking Info",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check for critical events that need notification\nconst update = $input.all()[0].json;\nconst criticalEvents = ['departed', 'arrived', 'customs_cleared', 'delayed', 'delivered'];\n\nconst latestEvent = update.events[0];\nconst needsNotification = criticalEvents.some(event => \n  latestEvent.description.toLowerCase().includes(event) ||\n  latestEvent.status === event\n);\n\nreturn [{\n  json: {\n    ...update,\n    needs_notification: needsNotification,\n    notification_type: latestEvent.status\n  }\n}];"
+      },
+      "id": "check-critical",
+      "name": "Check Critical Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"needs_notification\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "should-notify",
+      "name": "Should Notify?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1650, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/shipments/{{$json[\"shipment_id\"]}}/stakeholders",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-stakeholders",
+      "name": "Get Stakeholders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1850, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "shipments@fastenmind.com",
+        "toEmail": "={{$json[\"stakeholder_emails\"].join(\",\")}}",
+        "subject": "Shipment Update - {{$json[\"tracking_number\"]}}",
+        "html": true,
+        "htmlBody": "=<h2>Shipment Tracking Update</h2>\n<p>There's a new update for your shipment:</p>\n<ul>\n<li><strong>Tracking Number:</strong> {{$json[\"tracking_number\"]}}</li>\n<li><strong>Carrier:</strong> {{$json[\"carrier\"]}}</li>\n<li><strong>Status:</strong> {{$json[\"new_status\"]}}</li>\n<li><strong>Current Location:</strong> {{$json[\"current_location\"]}}</li>\n<li><strong>Estimated Arrival:</strong> {{new Date($json[\"estimated_arrival\"]).toLocaleDateString()}}</li>\n</ul>\n<h3>Latest Event:</h3>\n<p>{{$json[\"events\"][0].description}} at {{$json[\"events\"][0].location}}</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/shipments/{{$json[\"shipment_id\"]}}\">View Full Details</a></p>\n<p>Best regards,<br>FastenMind Logistics</p>",
+        "options": {}
+      },
+      "id": "send-notification",
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2050, 100]
+    }
+  ],
+  "connections": {
+    "Schedule - Every 4 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get Active Shipments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Shipments": {
+      "main": [
+        [
+          {
+            "node": "Split into Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into Batches": {
+      "main": [
+        [
+          {
+            "node": "Query Carrier API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Carrier API": {
+      "main": [
+        [
+          {
+            "node": "Has Update?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Update?": {
+      "main": [
+        [
+          {
+            "node": "Update Tracking Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Tracking Info": {
+      "main": [
+        [
+          {
+            "node": "Check Critical Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Critical Events": {
+      "main": [
+        [
+          {
+            "node": "Should Notify?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Notify?": {
+      "main": [
+        [
+          {
+            "node": "Get Stakeholders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Stakeholders": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "6",
+      "name": "logistics"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "mno345"
+}

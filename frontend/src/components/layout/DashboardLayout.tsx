@@ -32,11 +32,12 @@ import {
   Activity,
   Link2,
   Webhook,
-  Sync,
+  RefreshCw as Sync,
   Key,
   Server,
   History,
-  CreditCard
+  CreditCard,
+  Bell
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/store/auth.store'

@@ -255,7 +255,7 @@ export default function QuoteDetailPage() {
             )}
             {canApprove && (
               <>
-                <Button variant="success" onClick={() => handleReview('approve')}>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleReview('approve')}>
                   <CheckCircle className="mr-2 h-4 w-4" />
                   核准
                 </Button>
@@ -275,7 +275,7 @@ export default function QuoteDetailPage() {
               <Download className="mr-2 h-4 w-4" />
               下載 PDF
             </Button>
-            {(quote.status === 'sent' || quote.status === 'accepted') && ['admin', 'sales'].includes(user?.role || '') && (
+            {(quote.status === 'sent' || quote.status === 'approved') && ['admin', 'sales'].includes(user?.role || '') && (
               <Button onClick={() => router.push(`/orders/new?quote_id=${quoteId}`)}>
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 建立訂單
@@ -290,7 +290,7 @@ export default function QuoteDetailPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>報價已過期</AlertTitle>
             <AlertDescription>
-              此報價單已於 {format(new Date(quote.valid_until), 'yyyy/MM/dd', { locale: zhTW })} 過期
+              此報價單已於 {quote.valid_until ? format(new Date(quote.valid_until), 'yyyy/MM/dd', { locale: zhTW }) : '未知日期'} 過期
             </AlertDescription>
           </Alert>
         )}
@@ -334,14 +334,14 @@ export default function QuoteDetailPage() {
                     <Label className="text-gray-500">有效期限</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Calendar className="h-4 w-4 text-gray-400" />
-                      <span>{format(new Date(quote.valid_until), 'yyyy/MM/dd', { locale: zhTW })}</span>
+                      <span>{quote.valid_until ? format(new Date(quote.valid_until), 'yyyy/MM/dd', { locale: zhTW }) : '未設定'}</span>
                     </div>
                   </div>
                   <div>
                     <Label className="text-gray-500">交貨天數</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Truck className="h-4 w-4 text-gray-400" />
-                      <span>{quote.delivery_days} 天</span>
+                      <span>{quote.delivery_terms || '未設定'}</span>
                     </div>
                   </div>
                   <div>
@@ -367,28 +367,28 @@ export default function QuoteDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-gray-500">產品名稱</Label>
-                    <p className="mt-1 font-medium">{quote.inquiry?.product_name}</p>
+                    <p className="mt-1 font-medium">{quote.items?.[0]?.product_name || '未設定'}</p>
                   </div>
                   <div>
                     <Label className="text-gray-500">產品類別</Label>
-                    <p className="mt-1">{quote.inquiry?.product_category}</p>
+                    <p className="mt-1">未設定</p>
                   </div>
                   <div>
                     <Label className="text-gray-500">數量</Label>
-                    <p className="mt-1">{quote.inquiry?.quantity.toLocaleString()} {quote.inquiry?.unit}</p>
+                    <p className="mt-1">{quote.items?.[0]?.quantity.toLocaleString() || '0'} {quote.items?.[0]?.unit || 'PCS'}</p>
                   </div>
                   <div>
                     <Label className="text-gray-500">交貨條件</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <Globe className="h-4 w-4 text-gray-400" />
-                      <span>{quote.inquiry?.incoterm}</span>
+                      <span>{quote.delivery_terms || '未設定'}</span>
                     </div>
                   </div>
                 </div>
-                {quote.inquiry?.special_requirements && (
+                {quote.remarks && (
                   <div>
-                    <Label className="text-gray-500">特殊要求</Label>
-                    <p className="mt-1 text-sm text-gray-600">{quote.inquiry.special_requirements}</p>
+                    <Label className="text-gray-500">備註</Label>
+                    <p className="mt-1 text-sm text-gray-600">{quote.remarks}</p>
                   </div>
                 )}
               </CardContent>
@@ -431,10 +431,10 @@ export default function QuoteDetailPage() {
                     </div>
                   </div>
                   
-                  {quote.notes && (
+                  {quote.remarks && (
                     <div className="mt-4">
                       <Label className="text-gray-500">備註</Label>
-                      <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{quote.notes}</p>
+                      <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">{quote.remarks}</p>
                     </div>
                   )}
                 </div>
@@ -570,14 +570,14 @@ export default function QuoteDetailPage() {
                         </div>
                         <div className="ml-2">
                           <p className="text-sm">
-                            由 <span className="font-medium">{version.created_by.full_name}</span> 於{' '}
+                            由 <span className="font-medium">{version.creator?.name || version.created_by}</span> 於{' '}
                             {format(new Date(version.created_at), 'yyyy/MM/dd HH:mm', { locale: zhTW })} 建立
                           </p>
-                          {version.change_summary && (
-                            <p className="text-sm text-gray-600 mt-1">{version.change_summary}</p>
+                          {version.version_notes && (
+                            <p className="text-sm text-gray-600 mt-1">{version.version_notes}</p>
                           )}
                           <div className="mt-2 text-sm text-gray-500">
-                            單價: ${version.unit_price.toFixed(4)} | 總成本: ${version.total_cost.toFixed(2)}
+                            版本 {version.version_number} {version.is_current ? '(當前版本)' : ''}
                           </div>
                         </div>
                       </div>
@@ -697,7 +697,7 @@ export default function QuoteDetailPage() {
                 發送報價單
               </DialogTitle>
               <DialogDescription>
-                報價單將發送給：{quote.customer?.contact_email}
+                報價單將發送給：{quote.customer?.email || '未設定'}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">

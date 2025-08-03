@@ -66,8 +66,8 @@ export default function InquiryDetailPage() {
 
   // Fetch available engineers
   const { data: engineers = [] } = useQuery({
-    queryKey: ['available-engineers'],
-    queryFn: () => assignmentService.getAvailableEngineers(),
+    queryKey: ['available-engineers', inquiryId],
+    queryFn: () => assignmentService.getAvailableEngineers(inquiryId),
   })
 
   // Assign engineer mutation
@@ -189,7 +189,7 @@ export default function InquiryDetailPage() {
             <CardContent>
               <p className="text-sm text-blue-800">
                 根據分派規則，建議將此詢價單分派給：
-                <strong className="ml-1">{suggestion.suggested_engineer.full_name}</strong>
+                <strong className="ml-1">{suggestion.suggested_engineer.engineer_name}</strong>
               </p>
               <p className="text-sm text-blue-700 mt-1">
                 原因：{suggestion.reason}
@@ -406,10 +406,10 @@ export default function InquiryDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {engineers.map((engineer) => (
-                      <SelectItem key={engineer.id} value={engineer.id}>
+                      <SelectItem key={engineer.engineer_id} value={engineer.engineer_id}>
                         <div className="flex items-center justify-between w-full">
-                          <span>{engineer.full_name}</span>
-                          {engineer.id === suggestion?.suggested_engineer?.id && (
+                          <span>{engineer.engineer_name}</span>
+                          {engineer.engineer_id === suggestion?.suggested_engineer?.engineer_id && (
                             <Badge variant="info" className="ml-2">建議</Badge>
                           )}
                         </div>

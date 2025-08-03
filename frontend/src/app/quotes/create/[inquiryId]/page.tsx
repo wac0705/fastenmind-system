@@ -71,7 +71,7 @@ export default function CreateQuotePage() {
 
   // Create quote mutation
   const createQuoteMutation = useMutation({
-    mutationFn: (data: any) => quoteService.create(data),
+    mutationFn: (data: any) => quoteService.createQuote(data),
     onSuccess: (quote) => {
       toast({
         title: '報價單建立成功',

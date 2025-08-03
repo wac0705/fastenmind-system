@@ -432,7 +432,7 @@ export default function FinancePage() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-500">逾期發票</span>
                       <span className="font-medium text-red-600">
-                        {dashboard?.currency} {(dashboard?.ar_summary.days_30 + dashboard?.ar_summary.days_60 + dashboard?.ar_summary.over_90).toLocaleString()}
+                        {dashboard?.currency} {((dashboard?.ar_summary?.days_30 || 0) + (dashboard?.ar_summary?.days_60 || 0) + (dashboard?.ar_summary?.over_90 || 0)).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -598,9 +598,9 @@ export default function FinancePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {pendingExpenses?.data.length > 0 ? (
+                  {(pendingExpenses?.data?.length || 0) > 0 ? (
                     <div className="space-y-3">
-                      {pendingExpenses.data.slice(0, 3).map((expense) => (
+                      {pendingExpenses?.data?.slice(0, 3).map((expense) => (
                         <div key={expense.id} className="p-3 border rounded-lg">
                           <div className="flex justify-between items-start">
                             <div>
@@ -660,7 +660,7 @@ export default function FinancePage() {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-500">逾期金額</span>
                       <span className="font-medium text-red-600">
-                        {dashboard?.ar_summary.currency} {(dashboard?.ar_summary.days_30 + dashboard?.ar_summary.days_60 + dashboard?.ar_summary.over_90).toLocaleString()}
+                        {dashboard?.ar_summary?.currency} {((dashboard?.ar_summary?.days_30 || 0) + (dashboard?.ar_summary?.days_60 || 0) + (dashboard?.ar_summary?.over_90 || 0)).toLocaleString()}
                       </span>
                     </div>
                   </div>

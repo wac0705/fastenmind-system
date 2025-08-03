@@ -92,8 +92,8 @@ func (h *ExchangeRateHandler) BatchUpdateExchangeRates(c echo.Context) error {
 				ValidDate:    time.Now(),
 				RateType:     "mid",
 				Source:       "api",
-				CompanyID:    companyID,
-				CreatedBy:    userID,
+				CompanyID:    companyID.String(),
+				CreatedBy:    userID.String(),
 			}
 			
 			if err := tx.Create(newRate).Error; err != nil {

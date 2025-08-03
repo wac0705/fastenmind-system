@@ -1,0 +1,180 @@
+{
+  "name": "FastenMind - Cost Update Reminder",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "d8c4b7a5-1234-4567-8901-234567890123",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/process-costs/outdated",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e9d5c8b6-2345-5678-9012-345678901234",
+      "name": "Get Outdated Costs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"outdated_materials_count\"]}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "f0e6d9c7-3456-6789-0123-456789012345",
+      "name": "Check If Updates Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "system@fastenmind.com",
+        "toEmail": "={{$json[\"engineer_emails\"].join(\",\")}}",
+        "subject": "Cost Update Reminder - Action Required",
+        "html": true,
+        "htmlBody": "=<h2>Material and Process Cost Update Required</h2>\n<p>Dear Engineer,</p>\n<p>The following items require cost updates:</p>\n<h3>Materials ({{$json[\"outdated_materials_count\"]}} items)</h3>\n<ul>\n{{$json[\"outdated_materials\"].map(m => `<li>${m.name} - Last updated: ${m.last_updated}</li>`).join(\"\\n\")}}\n</ul>\n<h3>Process Templates ({{$json[\"outdated_processes_count\"]}} items)</h3>\n<ul>\n{{$json[\"outdated_processes\"].map(p => `<li>${p.name} - Last updated: ${p.last_updated}</li>`).join(\"\\n\")}}\n</ul>\n<p>Please log in to the system and update these costs at your earliest convenience.</p>\n<p>Best regards,<br>FastenMind System</p>",
+        "options": {}
+      },
+      "id": "01f7e0d8-4567-7890-1234-567890123456",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "cost_update_reminder_sent"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "12081f19-5678-8901-2345-678901234567",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Outdated Costs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Outdated Costs": {
+      "main": [
+        [
+          {
+            "node": "Check If Updates Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Updates Needed": {
+      "main": [
+        [
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "2",
+      "name": "cost-management"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "abc123"
+}

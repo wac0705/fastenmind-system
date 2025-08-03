@@ -113,6 +113,16 @@ class AssignmentService {
     return response.data;
   }
 
+  // 分派工程師
+  async assignEngineer(inquiryId: string, engineerId: string, notes?: string): Promise<AssignmentHistory> {
+    return this.manualAssign({
+      inquiry_id: inquiryId,
+      engineer_id: engineerId,
+      reason: notes,
+      assignment_type: 'manual'
+    });
+  }
+
   // 工程師自選
   async selfSelect(inquiryId: string): Promise<AssignmentHistory> {
     const response = await api.post(`/assignments/self-select/${inquiryId}`);

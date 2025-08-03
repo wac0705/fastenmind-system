@@ -286,7 +286,7 @@ export default function AnalyticsPage() {
                           fill="#8884d8"
                           dataKey="value"
                         >
-                          {(dashboardData?.quoteStatusDistribution || []).map((entry, index) => (
+                          {(dashboardData?.quoteStatusDistribution || []).map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
@@ -365,7 +365,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {quoteTrends?.topProducts?.map((product, index) => (
+                  {quoteTrends?.topProducts?.map((product: any, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full bg-${COLORS[index]}`} />
@@ -428,7 +428,7 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {customerAnalytics?.topCustomers?.map((customer, index) => (
+                  {customerAnalytics?.topCustomers?.map((customer: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <p className="font-medium">{customer.name}</p>
@@ -461,7 +461,7 @@ export default function AnalyticsPage() {
                       <YAxis dataKey="process" type="category" />
                       <Tooltip />
                       <Bar dataKey="utilization" fill="#2563eb">
-                        {(processAnalytics?.utilization || []).map((entry, index) => (
+                        {(processAnalytics?.utilization || []).map((entry: any, index: number) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={entry.utilization > 80 ? '#ef4444' : entry.utilization > 60 ? '#f59e0b' : '#10b981'} 
@@ -494,7 +494,7 @@ export default function AnalyticsPage() {
                         paddingAngle={5}
                         dataKey="value"
                       >
-                        {(processAnalytics?.costBreakdown || []).map((entry, index) => (
+                        {(processAnalytics?.costBreakdown || []).map((entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>

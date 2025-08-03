@@ -62,7 +62,7 @@ export default function ReportExecutionsPage() {
       search: searchQuery || undefined,
       report_id: reportFilter || undefined,
       status: statusFilter || undefined,
-      user_id: userFilter || undefined,
+      executed_by: userFilter || undefined,
       start_date: dateRange.start || undefined,
       end_date: dateRange.end || undefined,
     }),
@@ -360,7 +360,7 @@ export default function ReportExecutionsPage() {
                     {executionsData?.data.map((execution) => (
                       <TableRow key={execution.id} className="cursor-pointer hover:bg-gray-50">
                         <TableCell>
-                          <p className="font-mono">{execution.execution_no}</p>
+                          <p className="font-mono">{execution.id.slice(-8)}</p>
                         </TableCell>
                         <TableCell>
                           <div>
@@ -398,10 +398,10 @@ export default function ReportExecutionsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          {execution.result_count !== null ? (
+                          {(execution as any).result_count !== null ? (
                             <div className="flex items-center gap-1">
                               <Database className="h-4 w-4 text-gray-400" />
-                              <span>{execution.result_count.toLocaleString()}</span>
+                              <span>{((execution as any).result_count || 0).toLocaleString()}</span>
                             </div>
                           ) : (
                             <span className="text-gray-400">-</span>

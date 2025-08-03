@@ -257,7 +257,7 @@ export default function QuotesPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          ${(quote.total_amount / (quote.inquiry?.quantity || 1)).toFixed(4)}
+                          ${(quote.total_amount / ((quote as any).inquiry?.quantity || quote.items?.[0]?.quantity || 1)).toFixed(4)}
                         </TableCell>
                         <TableCell>
                           {quote.valid_until ? format(new Date(quote.valid_until), 'yyyy/MM/dd', {

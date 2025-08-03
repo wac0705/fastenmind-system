@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,7 +38,10 @@ func (r *TradeRepository) GetTariffCodesByCompany(companyID uuid.UUID, hsCode, c
 	query := r.db.Where("company_id = ?", companyID)
 
 	if hsCode != "" {
-		query = query.Where("hs_code ILIKE ?", "%"+hsCode+"%")
+		// 使用安全的 LIKE 查詢，轉義特殊字符
+		escapedHSCode := strings.ReplaceAll(hsCode, "%", "\\%")
+		escapedHSCode = strings.ReplaceAll(escapedHSCode, "_", "\\_")
+		query = query.Where("hs_code ILIKE ?", "%"+escapedHSCode+"%")
 	}
 	if category != "" {
 		query = query.Where("category = ?", category)
@@ -306,7 +310,10 @@ func (r *TradeRepository) GetShipmentEventsByLocation(companyID uuid.UUID, locat
 	query := r.db.Where("company_id = ?", companyID)
 
 	if location != "" {
-		query = query.Where("location ILIKE ?", "%"+location+"%")
+		// 使用安全的 LIKE 查詢，轉義特殊字符
+		escapedLocation := strings.ReplaceAll(location, "%", "\\%")
+		escapedLocation = strings.ReplaceAll(escapedLocation, "_", "\\_")
+		query = query.Where("location ILIKE ?", "%"+escapedLocation+"%")
 	}
 	if eventType != "" {
 		query = query.Where("event_type = ?", eventType)

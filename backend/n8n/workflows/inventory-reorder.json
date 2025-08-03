@@ -1,0 +1,360 @@
+{
+  "name": "FastenMind - Inventory Reorder Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inventory-update",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "id": "webhook-inventory",
+      "name": "Webhook - Inventory Level Change",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "fastenmind-inventory-reorder"
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/inventory/{{$json[\"body\"][\"item_id\"]}}/reorder-info",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-reorder-info",
+      "name": "Get Reorder Information",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if reorder is needed\nconst inventoryUpdate = $input.all()[0].json.body;\nconst reorderInfo = $input.all()[0].json;\n\nconst currentQty = inventoryUpdate.current_quantity;\nconst reorderPoint = reorderInfo.reorder_point;\nconst reorderQty = reorderInfo.reorder_quantity;\nconst safetyStock = reorderInfo.safety_stock;\nconst leadTimeDays = reorderInfo.lead_time_days;\nconst avgDailyUsage = reorderInfo.avg_daily_usage;\n\n// Calculate days of stock remaining\nconst daysOfStock = currentQty / avgDailyUsage;\nconst projectedStockAtLeadTime = currentQty - (avgDailyUsage * leadTimeDays);\n\n// Determine reorder urgency\nlet urgencyLevel = 'normal';\nlet reorderNeeded = false;\nlet suggestedQty = reorderQty;\n\nif (currentQty <= reorderPoint) {\n  reorderNeeded = true;\n  \n  if (currentQty <= safetyStock) {\n    urgencyLevel = 'critical';\n    suggestedQty = reorderQty * 1.5; // Order extra in critical situations\n  } else if (projectedStockAtLeadTime <= 0) {\n    urgencyLevel = 'urgent';\n    suggestedQty = reorderQty * 1.25;\n  }\n}\n\nreturn [{\n  json: {\n    item_id: inventoryUpdate.item_id,\n    item_name: inventoryUpdate.item_name,\n    current_quantity: currentQty,\n    reorder_point: reorderPoint,\n    safety_stock: safetyStock,\n    reorder_needed: reorderNeeded,\n    urgency_level: urgencyLevel,\n    suggested_quantity: Math.ceil(suggestedQty),\n    days_of_stock: Math.round(daysOfStock),\n    projected_stock_at_leadtime: Math.round(projectedStockAtLeadTime),\n    preferred_supplier: reorderInfo.preferred_supplier,\n    last_purchase_price: reorderInfo.last_purchase_price\n  }\n}];"
+      },
+      "id": "check-reorder",
+      "name": "Check Reorder Need",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"reorder_needed\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "needs-reorder",
+      "name": "Needs Reorder?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/purchase-requisitions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "item_id",
+              "value": "={{$json[\"item_id\"]}}"
+            },
+            {
+              "name": "quantity",
+              "value": "={{$json[\"suggested_quantity\"]}}"
+            },
+            {
+              "name": "urgency",
+              "value": "={{$json[\"urgency_level\"]}}"
+            },
+            {
+              "name": "reason",
+              "value": "=Automated reorder: Stock at {{$json[\"current_quantity\"]}}, below reorder point of {{$json[\"reorder_point\"]}}"
+            },
+            {
+              "name": "suggested_supplier_id",
+              "value": "={{$json[\"preferred_supplier\"].id}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-requisition",
+      "name": "Create Purchase Requisition",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"urgency_level\"]}}",
+              "value2": "critical"
+            },
+            {
+              "value1": "={{$json[\"urgency_level\"]}}",
+              "value2": "urgent"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "check-urgency",
+      "name": "Is Urgent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "email_recipients",
+              "value": "={{$json[\"urgency_level\"] === 'critical' ? 'procurement.manager@fastenmind.com,operations.manager@fastenmind.com' : 'procurement.team@fastenmind.com'}}"
+            },
+            {
+              "name": "email_priority",
+              "value": "={{$json[\"urgency_level\"] === 'critical' ? 'high' : 'normal'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-email-params",
+      "name": "Set Email Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [1450, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "inventory@fastenmind.com",
+        "toEmail": "={{$json[\"email_recipients\"]}}",
+        "subject": "={{$json[\"urgency_level\"] === 'critical' ? '🚨 CRITICAL' : '⚠️ URGENT'}}: Inventory Reorder Required - {{$json[\"item_name\"]}}",
+        "html": true,
+        "htmlBody": "=<h2 style=\"color: {{$json[\"urgency_level\"] === 'critical' ? 'red' : 'orange'}};\">{{$json[\"urgency_level\"].toUpperCase()}} Inventory Alert</h2>\n<p>Immediate action required for inventory reorder:</p>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><td><strong>Item:</strong></td><td>{{$json[\"item_name\"]}}</td></tr>\n<tr><td><strong>Current Quantity:</strong></td><td style=\"color: red;\">{{$json[\"current_quantity\"]}}</td></tr>\n<tr><td><strong>Reorder Point:</strong></td><td>{{$json[\"reorder_point\"]}}</td></tr>\n<tr><td><strong>Safety Stock:</strong></td><td>{{$json[\"safety_stock\"]}}</td></tr>\n<tr><td><strong>Days of Stock Remaining:</strong></td><td>{{$json[\"days_of_stock\"]}}</td></tr>\n<tr><td><strong>Suggested Order Quantity:</strong></td><td style=\"font-weight: bold;\">{{$json[\"suggested_quantity\"]}}</td></tr>\n</table>\n<h3>Supplier Information:</h3>\n<ul>\n<li><strong>Preferred Supplier:</strong> {{$json[\"preferred_supplier\"].name}}</li>\n<li><strong>Last Purchase Price:</strong> ${{$json[\"last_purchase_price\"]}}</li>\n<li><strong>Estimated Total:</strong> ${{($json[\"last_purchase_price\"] * $json[\"suggested_quantity\"]).toFixed(2)}}</li>\n</ul>\n<p style=\"background-color: #ffffcc; padding: 10px;\"><strong>Action Required:</strong> A purchase requisition has been automatically created. Please review and approve immediately.</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/purchase-requisitions/{{$json[\"requisition_id\"]}}\">Review Purchase Requisition</a></p>\n<p>Best regards,<br>FastenMind Inventory Management</p>",
+        "options": {
+          "appendAttribution": false,
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "id": "send-urgent-alert",
+      "name": "Send Urgent Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1650, 100]
+    },
+    {
+      "parameters": {
+        "fromEmail": "inventory@fastenmind.com",
+        "toEmail": "procurement.team@fastenmind.com",
+        "subject": "Inventory Reorder Notification - {{$json[\"item_name\"]}}",
+        "html": true,
+        "htmlBody": "=<h2>Inventory Reorder Notification</h2>\n<p>The following item has reached its reorder point:</p>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><td><strong>Item:</strong></td><td>{{$json[\"item_name\"]}}</td></tr>\n<tr><td><strong>Current Quantity:</strong></td><td>{{$json[\"current_quantity\"]}}</td></tr>\n<tr><td><strong>Reorder Point:</strong></td><td>{{$json[\"reorder_point\"]}}</td></tr>\n<tr><td><strong>Suggested Quantity:</strong></td><td>{{$json[\"suggested_quantity\"]}}</td></tr>\n<tr><td><strong>Preferred Supplier:</strong></td><td>{{$json[\"preferred_supplier\"].name}}</td></tr>\n</table>\n<p>A purchase requisition has been created for your review.</p>\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/purchase-requisitions/{{$json[\"requisition_id\"]}}\">View Purchase Requisition</a></p>\n<p>Best regards,<br>FastenMind Inventory Management</p>",
+        "options": {}
+      },
+      "id": "send-normal-notification",
+      "name": "Send Normal Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "inventory_reorder_triggered"
+            },
+            {
+              "name": "entity_type",
+              "value": "inventory_item"
+            },
+            {
+              "name": "entity_id",
+              "value": "={{$json[\"item_id\"]}}"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify({current_quantity: $json[\"current_quantity\"], reorder_point: $json[\"reorder_point\"], urgency_level: $json[\"urgency_level\"], suggested_quantity: $json[\"suggested_quantity\"]})}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-reorder",
+      "name": "Log Reorder Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Inventory Level Change": {
+      "main": [
+        [
+          {
+            "node": "Get Reorder Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Reorder Information": {
+      "main": [
+        [
+          {
+            "node": "Check Reorder Need",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reorder Need": {
+      "main": [
+        [
+          {
+            "node": "Needs Reorder?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Reorder?": {
+      "main": [
+        [
+          {
+            "node": "Create Purchase Requisition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Purchase Requisition": {
+      "main": [
+        [
+          {
+            "node": "Is Urgent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Urgent?": {
+      "main": [
+        [
+          {
+            "node": "Set Email Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Email Parameters": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Urgent Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Reorder Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Normal Notification": {
+      "main": [
+        [
+          {
+            "node": "Log Reorder Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "8",
+      "name": "inventory-management"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "stu901"
+}

@@ -43,35 +43,7 @@ func (r *companyRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error 
 	return r.db.WithContext(ctx).Delete(&model.Company{}, "id = ?", id).Error
 }
 
-// Customer Repository Stub
-type customerRepositoryGorm struct{ db *gorm.DB }
-
-func NewCustomerRepositoryGorm(db *gorm.DB) CustomerRepository {
-	return &customerRepositoryGorm{db: db}
-}
-
-func (r *customerRepositoryGorm) Create(ctx context.Context, customer *model.Customer) error {
-	return r.db.WithContext(ctx).Create(customer).Error
-}
-
-func (r *customerRepositoryGorm) GetByID(ctx context.Context, id uuid.UUID) (*model.Customer, error) {
-	var customer model.Customer
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&customer).Error
-	return &customer, err
-}
-
-func (r *customerRepositoryGorm) List(ctx context.Context, companyID uuid.UUID, pagination *model.Pagination) ([]*model.Customer, error) {
-	var customers []*model.Customer
-	return customers, r.db.WithContext(ctx).Where("company_id = ?", companyID).Find(&customers).Error
-}
-
-func (r *customerRepositoryGorm) Update(ctx context.Context, customer *model.Customer) error {
-	return r.db.WithContext(ctx).Save(customer).Error
-}
-
-func (r *customerRepositoryGorm) Delete(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&model.Customer{}, "id = ?", id).Error
-}
+// Customer Repository is defined in customer_repository.go
 
 // Other repository stubs with minimal implementation
 type inquiryRepositoryGorm struct{ db *gorm.DB }
@@ -216,42 +188,7 @@ func (r *inventoryRepositoryGorm) GetPurchaseOrderByID(id uuid.UUID) (*models.Pu
 func (r *inventoryRepositoryGorm) UpdatePurchaseOrder(po *models.PurchaseOrder) error { return ErrNotImplemented }
 func (r *inventoryRepositoryGorm) ListPurchaseOrdersByCompany(companyID uuid.UUID, status string) ([]models.PurchaseOrder, error) { return nil, ErrNotImplemented }
 
-// Trade Repository
-type tradeRepositoryGorm struct{ db *gorm.DB }
-func NewTradeRepositoryGorm(db *gorm.DB) TradeRepository { return &tradeRepositoryGorm{db: db} }
-func (r *tradeRepositoryGorm) FindTradeTariffCodes(params map[string]interface{}) ([]models.TradeTariffCode, int64, error) { return nil, 0, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetTradeTariffCode(id uuid.UUID) (*models.TradeTariffCode, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateTradeTariffCode(code *models.TradeTariffCode) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) UpdateTradeTariffCode(code *models.TradeTariffCode) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) DeleteTradeTariffCode(id uuid.UUID) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) FindTradeTariffRates(params map[string]interface{}) ([]models.TradeTariffRate, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetTradeTariffRate(id uuid.UUID) (*models.TradeTariffRate, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateTradeTariffRate(rate *models.TradeTariffRate) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) UpdateTradeTariffRate(rate *models.TradeTariffRate) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetEffectiveTariffRate(tariffCodeID uuid.UUID, originCountry, destCountry string, date time.Time) (*models.TradeTariffRate, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) FindTradeShipments(params map[string]interface{}) ([]models.TradeShipment, int64, error) { return nil, 0, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetTradeShipment(id uuid.UUID) (*models.TradeShipment, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateTradeShipment(shipment *models.TradeShipment) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) UpdateTradeShipment(shipment *models.TradeShipment) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateShipmentEvent(event *models.ShipmentEvent) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetShipmentEvents(shipmentID uuid.UUID) ([]models.ShipmentEvent, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) FindTradeDocuments(params map[string]interface{}) ([]models.TradeDocument, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetTradeDocument(id uuid.UUID) (*models.TradeDocument, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateTradeDocument(doc *models.TradeDocument) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) UpdateTradeDocument(doc *models.TradeDocument) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) FindLetterOfCredits(params map[string]interface{}) ([]models.LetterOfCredit, int64, error) { return nil, 0, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetLetterOfCredit(id uuid.UUID) (*models.LetterOfCredit, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateLetterOfCredit(lc *models.LetterOfCredit) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) UpdateLetterOfCredit(lc *models.LetterOfCredit) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateLCUtilization(util *models.LCUtilization) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetLCUtilizations(lcID uuid.UUID) ([]models.LCUtilization, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateComplianceCheck(check *models.TradeComplianceCheck) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetComplianceChecks(resourceType, resourceID string) ([]models.TradeComplianceCheck, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetLatestComplianceCheck(resourceType, resourceID string) (*models.TradeComplianceCheck, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) FindExchangeRates(params map[string]interface{}) ([]models.ExchangeRate, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetExchangeRate(id uuid.UUID) (*models.ExchangeRate, error) { return nil, ErrNotImplemented }
-func (r *tradeRepositoryGorm) CreateExchangeRate(rate *models.ExchangeRate) error { return ErrNotImplemented }
-func (r *tradeRepositoryGorm) GetLatestExchangeRate(fromCurrency, toCurrency string) (*models.ExchangeRate, error) { return nil, ErrNotImplemented }
+// Trade Repository - Using actual implementation from trade_repository.go and trade_repository_impl.go
 
 // Advanced Repository
 type advancedRepositoryGorm struct{ db *gorm.DB }

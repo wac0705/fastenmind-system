@@ -44,7 +44,11 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const response = await authService.login(data as LoginRequest)
-      setUser(response.user)
+      setUser({
+        ...response.user,
+        is_active: true,
+        is_email_verified: true
+      })
       
       toast({
         title: '登入成功',

@@ -1,0 +1,338 @@
+{
+  "name": "FastenMind - Compliance Document Expiry",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "daily-trigger",
+      "name": "Daily Check - 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/compliance/expiring-documents",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "days_ahead",
+              "value": "30"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-expiring-docs",
+      "name": "Get Expiring Documents",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Categorize documents by expiry urgency\nconst documents = $input.all()[0].json.documents || [];\n\nconst categorized = {\n  expired: [],\n  critical: [], // Within 7 days\n  urgent: [],   // Within 15 days\n  warning: []   // Within 30 days\n};\n\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\ndocuments.forEach(doc => {\n  const expiryDate = new Date(doc.expiry_date);\n  const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));\n  \n  doc.days_until_expiry = daysUntilExpiry;\n  \n  if (daysUntilExpiry < 0) {\n    doc.status = 'expired';\n    categorized.expired.push(doc);\n  } else if (daysUntilExpiry <= 7) {\n    doc.status = 'critical';\n    categorized.critical.push(doc);\n  } else if (daysUntilExpiry <= 15) {\n    doc.status = 'urgent';\n    categorized.urgent.push(doc);\n  } else if (daysUntilExpiry <= 30) {\n    doc.status = 'warning';\n    categorized.warning.push(doc);\n  }\n});\n\n// Determine notification levels\nconst needsNotification = \n  categorized.expired.length > 0 ||\n  categorized.critical.length > 0 ||\n  categorized.urgent.length > 0;\n\nconst needsEscalation = \n  categorized.expired.length > 0 ||\n  categorized.critical.length > 0;\n\nreturn [{\n  json: {\n    categorized,\n    needs_notification: needsNotification,\n    needs_escalation: needsEscalation,\n    total_expiring: documents.length,\n    summary: {\n      expired: categorized.expired.length,\n      critical: categorized.critical.length,\n      urgent: categorized.urgent.length,\n      warning: categorized.warning.length\n    }\n  }\n}];"
+      },
+      "id": "categorize-docs",
+      "name": "Categorize by Urgency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"needs_notification\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-notification",
+      "name": "Needs Notification?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification emails by department\nconst categorized = $input.all()[0].json.categorized;\n\n// Group documents by responsible department\nconst departmentGroups = {};\n\nObject.entries(categorized).forEach(([status, docs]) => {\n  docs.forEach(doc => {\n    const dept = doc.responsible_department || 'general';\n    if (!departmentGroups[dept]) {\n      departmentGroups[dept] = {\n        expired: [],\n        critical: [],\n        urgent: [],\n        warning: []\n      };\n    }\n    departmentGroups[dept][status].push(doc);\n  });\n});\n\n// Create notification for each department\nconst notifications = [];\n\nObject.entries(departmentGroups).forEach(([dept, docs]) => {\n  const hasUrgentDocs = docs.expired.length > 0 || docs.critical.length > 0 || docs.urgent.length > 0;\n  \n  if (hasUrgentDocs) {\n    notifications.push({\n      department: dept,\n      documents: docs,\n      email: getDepartmentEmail(dept),\n      priority: docs.expired.length > 0 ? 'high' : docs.critical.length > 0 ? 'medium' : 'normal'\n    });\n  }\n});\n\nfunction getDepartmentEmail(dept) {\n  const emailMap = {\n    'legal': 'legal.team@fastenmind.com',\n    'quality': 'quality.team@fastenmind.com',\n    'safety': 'safety.team@fastenmind.com',\n    'finance': 'finance.team@fastenmind.com',\n    'hr': 'hr.team@fastenmind.com',\n    'general': 'compliance@fastenmind.com'\n  };\n  return emailMap[dept] || 'compliance@fastenmind.com';\n}\n\nreturn notifications.map(notification => ({ json: notification }));"
+      },
+      "id": "prepare-notifications",
+      "name": "Prepare Department Notifications",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "compliance@fastenmind.com",
+        "toEmail": "={{$json[\"email\"]}}",
+        "subject": "={{$json[\"documents\"][\"expired\"].length > 0 ? '🚨 EXPIRED' : $json[\"documents\"][\"critical\"].length > 0 ? '⚠️ CRITICAL' : '📋'}} Compliance Documents Require Attention",
+        "html": true,
+        "htmlBody": "=<h2>Compliance Document Expiry Alert</h2>\n<p>The following compliance documents require your immediate attention:</p>\n\n{{$json[\"documents\"][\"expired\"].length > 0 ? '<h3 style=\"color: red;\">🚨 EXPIRED DOCUMENTS</h3><table border=\"1\" cellpadding=\"5\" cellspacing=\"0\"><tr><th>Document</th><th>Type</th><th>Expired On</th><th>Days Overdue</th></tr>' + $json[\"documents\"][\"expired\"].map(d => `<tr><td>${d.document_name}</td><td>${d.document_type}</td><td>${new Date(d.expiry_date).toLocaleDateString()}</td><td style=\"color: red;\">${Math.abs(d.days_until_expiry)} days</td></tr>`).join(\"\") + '</table>' : ''}}\n\n{{$json[\"documents\"][\"critical\"].length > 0 ? '<h3 style=\"color: orange;\">⚠️ CRITICAL - Expiring within 7 days</h3><table border=\"1\" cellpadding=\"5\" cellspacing=\"0\"><tr><th>Document</th><th>Type</th><th>Expires On</th><th>Days Left</th></tr>' + $json[\"documents\"][\"critical\"].map(d => `<tr><td>${d.document_name}</td><td>${d.document_type}</td><td>${new Date(d.expiry_date).toLocaleDateString()}</td><td style=\"color: orange;\">${d.days_until_expiry} days</td></tr>`).join(\"\") + '</table>' : ''}}\n\n{{$json[\"documents\"][\"urgent\"].length > 0 ? '<h3 style=\"color: #ff9900;\">📅 URGENT - Expiring within 15 days</h3><table border=\"1\" cellpadding=\"5\" cellspacing=\"0\"><tr><th>Document</th><th>Type</th><th>Expires On</th><th>Days Left</th></tr>' + $json[\"documents\"][\"urgent\"].map(d => `<tr><td>${d.document_name}</td><td>${d.document_type}</td><td>${new Date(d.expiry_date).toLocaleDateString()}</td><td>${d.days_until_expiry} days</td></tr>`).join(\"\") + '</table>' : ''}}\n\n{{$json[\"documents\"][\"warning\"].length > 0 ? '<h3>📋 WARNING - Expiring within 30 days</h3><table border=\"1\" cellpadding=\"5\" cellspacing=\"0\"><tr><th>Document</th><th>Type</th><th>Expires On</th><th>Days Left</th></tr>' + $json[\"documents\"][\"warning\"].map(d => `<tr><td>${d.document_name}</td><td>${d.document_type}</td><td>${new Date(d.expiry_date).toLocaleDateString()}</td><td>${d.days_until_expiry} days</td></tr>`).join(\"\") + '</table>' : ''}}\n\n<p style=\"background-color: #ffffcc; padding: 10px;\"><strong>Action Required:</strong> Please renew or update these documents immediately to maintain compliance.</p>\n\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/compliance/documents\">Manage Compliance Documents</a></p>\n\n<p>Best regards,<br>FastenMind Compliance Management</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-dept-notification",
+      "name": "Send Department Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"needs_escalation\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-escalation",
+      "name": "Needs Escalation?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1050, 400]
+    },
+    {
+      "parameters": {
+        "fromEmail": "compliance@fastenmind.com",
+        "toEmail": "management@fastenmind.com,legal.director@fastenmind.com",
+        "subject": "🚨 URGENT: Critical Compliance Documents Require Immediate Action",
+        "html": true,
+        "htmlBody": "=<h2 style=\"color: red;\">Critical Compliance Alert - Management Escalation</h2>\n<p>This is an escalation notice regarding critical compliance documents that require immediate management attention.</p>\n\n<h3>Summary:</h3>\n<table border=\"1\" cellpadding=\"5\" cellspacing=\"0\">\n<tr><td><strong>Expired Documents:</strong></td><td style=\"color: red; font-weight: bold;\">{{$json[\"summary\"][\"expired\"]}}</td></tr>\n<tr><td><strong>Critical (≤7 days):</strong></td><td style=\"color: orange; font-weight: bold;\">{{$json[\"summary\"][\"critical\"]}}</td></tr>\n<tr><td><strong>Total Requiring Action:</strong></td><td style=\"font-weight: bold;\">{{$json[\"summary\"][\"expired\"] + $json[\"summary\"][\"critical\"]}}</td></tr>\n</table>\n\n{{$json[\"categorized\"][\"expired\"].length > 0 ? '<h3 style=\"color: red;\">Expired Documents - Immediate Action Required</h3>' + $json[\"categorized\"][\"expired\"].map(d => `<p>• <strong>${d.document_name}</strong> (${d.document_type}) - Expired ${Math.abs(d.days_until_expiry)} days ago - Department: ${d.responsible_department}</p>`).join(\"\") : ''}}\n\n{{$json[\"categorized\"][\"critical\"].length > 0 ? '<h3 style=\"color: orange;\">Critical Documents - Expiring Within 7 Days</h3>' + $json[\"categorized\"][\"critical\"].map(d => `<p>• <strong>${d.document_name}</strong> (${d.document_type}) - Expires in ${d.days_until_expiry} days - Department: ${d.responsible_department}</p>`).join(\"\") : ''}}\n\n<p style=\"background-color: #ffcccc; padding: 10px; border: 2px solid red;\"><strong>IMMEDIATE ACTION REQUIRED:</strong> These compliance issues may result in regulatory penalties, operational disruptions, or legal consequences. Please ensure immediate action is taken.</p>\n\n<p><a href=\"{{$env[\"FASTENMIND_APP_URL\"]}}/compliance/dashboard\">View Compliance Dashboard</a></p>\n\n<p>This is an automated escalation from the FastenMind Compliance Management System.</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "send-escalation",
+      "name": "Send Management Escalation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/compliance/update-notification-status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "document_ids",
+              "value": "={{[...$json[\"categorized\"][\"expired\"], ...$json[\"categorized\"][\"critical\"], ...$json[\"categorized\"][\"urgent\"]].map(d => d.id)}}"
+            },
+            {
+              "name": "notification_sent_at",
+              "value": "={{new Date().toISOString()}}"
+            },
+            {
+              "name": "escalated",
+              "value": "={{$json[\"needs_escalation\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-status",
+      "name": "Update Notification Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env[\"FASTENMIND_API_URL\"]}}/api/n8n/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env[\"FASTENMIND_API_KEY\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "compliance_check_completed"
+            },
+            {
+              "name": "data",
+              "value": "={{JSON.stringify($json[\"summary\"])}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-check",
+      "name": "Log Compliance Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Daily Check - 9AM": {
+      "main": [
+        [
+          {
+            "node": "Get Expiring Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Expiring Documents": {
+      "main": [
+        [
+          {
+            "node": "Categorize by Urgency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categorize by Urgency": {
+      "main": [
+        [
+          {
+            "node": "Needs Notification?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Notification?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Department Notifications",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Needs Escalation?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Department Notifications": {
+      "main": [
+        [
+          {
+            "node": "Send Department Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Needs Escalation?": {
+      "main": [
+        [
+          {
+            "node": "Send Management Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Department Notification": {
+      "main": [
+        [
+          {
+            "node": "Update Notification Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Management Escalation": {
+      "main": [
+        [
+          {
+            "node": "Update Notification Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Notification Status": {
+      "main": [
+        [
+          {
+            "node": "Log Compliance Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "1",
+      "name": "fastenmind"
+    },
+    {
+      "id": "10",
+      "name": "compliance"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "yz0567"
+}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/fastenmind/fastener-api/internal/config"
@@ -14,11 +15,16 @@ import (
 	"github.com/fastenmind/fastener-api/internal/middleware"
 	"github.com/fastenmind/fastener-api/internal/repository"
 	"github.com/fastenmind/fastener-api/internal/service"
+	"github.com/fastenmind/fastener-api/pkg/concurrent"
 	"github.com/fastenmind/fastener-api/pkg/database"
 	"github.com/fastenmind/fastener-api/pkg/logger"
+	"github.com/fastenmind/fastener-api/pkg/resources"
+	"github.com/fastenmind/fastener-api/pkg/swagger"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	
+	. "github.com/fastenmind/fastener-api/internal/handler" // Import CleanupHandler
 )
 
 func main() {
@@ -33,30 +39,52 @@ func main() {
 	// Initialize logger
 	log := logger.New(cfg.Server.Environment)
 
+	// Initialize global resource manager
+	rm := resources.GetGlobalResourceManager()
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err := resources.ShutdownGlobalResourceManager(shutdownCtx); err != nil {
+			log.Error("Failed to shutdown resource manager:", err)
+		}
+	}()
+
+	// Initialize service registry
+	serviceRegistry := concurrent.NewServiceRegistry()
+
 	// Initialize database wrapper
 	dbWrapper, err := database.NewWrapper(cfg.Database)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
-	defer dbWrapper.Close()
+	
+	// Register database with resource manager
+	if err := rm.Databases().RegisterDB("main", dbWrapper.GormDB); err != nil {
+		log.Fatal("Failed to register database:", err)
+	}
 
 	// Initialize Echo
 	e := echo.New()
 	e.HideBanner = true
 	e.Logger = log
 
+	// Setup error handling
+	middleware.SetupErrorHandling(e)
+	
 	// Middleware
 	e.Use(echoMiddleware.Logger())
-	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.RequestID())
 	e.Use(middleware.CORS(cfg.CORS))
 	e.Use(middleware.Security())
+	e.Use(middleware.ValidationMiddleware())
+	e.Use(middleware.ResponseCleanup())
+	e.Use(CleanupHandler())
 
 	// Initialize repositories
 	repos := repository.NewRepositories(dbWrapper.GormDB)
 
 	// Initialize services
-	services := service.NewServices(repos, cfg)
+	services := service.NewServices(repos, cfg, dbWrapper.GormDB)
 
 	// Initialize handlers
 	h := handler.NewHandlers(services)
@@ -75,21 +103,56 @@ func main() {
 
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	// Graceful shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	log.Info("Shutting down server...")
+
+	// Create shutdown context with timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
-	if err := e.Shutdown(ctx); err != nil {
-		log.Fatal("Failed to shutdown server:", err)
+
+	// Create a channel to track shutdown completion
+	shutdownComplete := make(chan struct{})
+
+	go func() {
+		// Shutdown HTTP server
+		if err := e.Shutdown(shutdownCtx); err != nil {
+			log.Error("Failed to shutdown server:", err)
+		}
+
+		// Stop all services
+		if err := serviceRegistry.StopAll(shutdownCtx); err != nil {
+			log.Error("Failed to stop services:", err)
+		}
+
+		// Close database connections
+		dbWrapper.Close()
+
+		close(shutdownComplete)
+	}()
+
+	// Wait for shutdown to complete or timeout
+	select {
+	case <-shutdownComplete:
+		log.Info("Server stopped gracefully")
+	case <-shutdownCtx.Done():
+		log.Error("Server shutdown timeout exceeded, forcing exit")
 	}
-	
-	log.Info("Server stopped")
 }
 
 func setupRoutes(e *echo.Echo, h *handler.Handlers, cfg *config.Config) {
+	// Swagger documentation
+	swaggerConfig := swagger.Config{
+		Title:       "FastenMind API",
+		Description: "FastenMind Fastener Manufacturing ERP System API",
+		Version:     "1.0",
+		Host:        "localhost:" + cfg.Server.Port,
+		BasePath:    "/api/v1",
+		Schemes:     []string{"http", "https"},
+	}
+	swagger.RegisterRoutes(e, swaggerConfig)
+
 	// API Group
 	api := e.Group("/api/v1")
 
@@ -133,6 +196,9 @@ func setupRoutes(e *echo.Echo, h *handler.Handlers, cfg *config.Config) {
 		protected.GET("/customers/:id", h.Customer.Get)
 		protected.PUT("/customers/:id", h.Customer.Update)
 		protected.DELETE("/customers/:id", h.Customer.Delete)
+		protected.GET("/customers/:id/statistics", h.Customer.GetStatistics)
+		protected.GET("/customers/:id/credit-history", h.Customer.GetCreditHistory)
+		protected.GET("/customers/export", h.Customer.Export)
 
 		// Inquiry routes
 		protected.GET("/inquiries", h.Inquiry.List)
@@ -163,6 +229,33 @@ func setupRoutes(e *echo.Echo, h *handler.Handlers, cfg *config.Config) {
 		protected.GET("/assignment-rules/:id", h.AssignmentRule.Get)
 		protected.PUT("/assignment-rules/:id", h.AssignmentRule.Update)
 		protected.DELETE("/assignment-rules/:id", h.AssignmentRule.Delete)
+		
+		// Engineer assignment routes
+		protected.GET("/engineer-assignments/available", h.EngineerAssignment.GetAvailableEngineers)
+		protected.POST("/engineer-assignments/assign", h.EngineerAssignment.AssignEngineer)
+		protected.PUT("/engineer-assignments/:id/reassign", h.EngineerAssignment.ReassignEngineer)
+		protected.GET("/engineer-assignments/history", h.EngineerAssignment.GetAssignmentHistory)
+		protected.GET("/engineer-assignments/workload", h.EngineerAssignment.GetEngineerWorkload)
+		protected.PUT("/engineer-assignments/:id/status", h.EngineerAssignment.UpdateAssignmentStatus)
+		protected.GET("/engineer-assignments/stats", h.EngineerAssignment.GetAssignmentStats)
+		protected.POST("/engineer-assignments/auto-assign", h.EngineerAssignment.AutoAssignEngineer)
+		
+		// Process cost routes
+		protected.GET("/process-costs/templates", h.ProcessCost.GetCostTemplates)
+		protected.POST("/process-costs/templates", h.ProcessCost.CreateCostTemplate)
+		protected.PUT("/process-costs/templates/:id", h.ProcessCost.UpdateCostTemplate)
+		protected.DELETE("/process-costs/templates/:id", h.ProcessCost.DeleteCostTemplate)
+		protected.POST("/process-costs/calculate", h.ProcessCost.CalculateProcessCost)
+		protected.GET("/process-costs/history", h.ProcessCost.GetCostHistory)
+		protected.GET("/process-costs/materials", h.ProcessCost.GetMaterialCosts)
+		protected.PUT("/process-costs/materials/:id", h.ProcessCost.UpdateMaterialCost)
+		protected.GET("/process-costs/processing-rates", h.ProcessCost.GetProcessingRates)
+		protected.PUT("/process-costs/processing-rates/:id", h.ProcessCost.UpdateProcessingRate)
+		protected.POST("/process-costs/batch-calculate", h.ProcessCost.BatchCalculateCost)
+		protected.GET("/process-costs/analysis", h.ProcessCost.GetCostAnalysis)
+		protected.GET("/process-costs/export", h.ProcessCost.ExportCostReport)
+		protected.GET("/process-costs/settings", h.ProcessCost.GetCostSettings)
+		protected.PUT("/process-costs/settings", h.ProcessCost.UpdateCostSettings)
 
 		// Tariff routes
 		h.Tariff.RegisterRoutes(e, middleware.JWT(cfg.JWT.SecretKey))
@@ -336,5 +429,44 @@ func setupRoutes(e *echo.Echo, h *handler.Handlers, cfg *config.Config) {
 		// Integration Utilities
 		protected.POST("/integrations/utils/validate-mapping", h.Integration.ValidateMapping)
 		protected.POST("/integrations/utils/preview-transformation", h.Integration.PreviewDataTransformation)
+
+		// Report routes
+		// Reports
+		protected.GET("/reports", h.Report.ListReports)
+		protected.POST("/reports", h.Report.CreateReport)
+		protected.GET("/reports/:id", h.Report.GetReport)
+		protected.PUT("/reports/:id", h.Report.UpdateReport)
+		protected.DELETE("/reports/:id", h.Report.DeleteReport)
+		protected.POST("/reports/:id/duplicate", h.Report.DuplicateReport)
+		protected.POST("/reports/:id/execute", h.Report.ExecuteReport)
+		protected.GET("/reports/:id/export", h.Report.ExportReport)
+		
+		// Report Templates
+		protected.GET("/reports/templates", h.Report.ListReportTemplates)
+		protected.POST("/reports/templates", h.Report.CreateReportTemplate)
+		protected.GET("/reports/templates/:id", h.Report.GetReportTemplate)
+		protected.PUT("/reports/templates/:id", h.Report.UpdateReportTemplate)
+		protected.DELETE("/reports/templates/:id", h.Report.DeleteReportTemplate)
+		protected.POST("/reports/templates/:template_id/generate", h.Report.GenerateReportFromTemplate)
+		
+		// Report Executions
+		protected.GET("/reports/:report_id/executions", h.Report.ListReportExecutions)
+		protected.GET("/reports/executions/:id", h.Report.GetReportExecution)
+		protected.POST("/reports/executions/:id/cancel", h.Report.CancelReportExecution)
+		protected.GET("/reports/executions/:id/download", h.Report.DownloadReportResult)
+		
+		// Report Subscriptions
+		protected.GET("/reports/subscriptions", h.Report.ListReportSubscriptions)
+		protected.POST("/reports/subscriptions", h.Report.CreateReportSubscription)
+		protected.GET("/reports/subscriptions/:id", h.Report.GetReportSubscription)
+		protected.PUT("/reports/subscriptions/:id", h.Report.UpdateReportSubscription)
+		protected.DELETE("/reports/subscriptions/:id", h.Report.DeleteReportSubscription)
+		
+		// Report Business Operations
+		protected.GET("/reports/dashboard", h.Report.GetReportDashboard)
+		protected.GET("/reports/statistics", h.Report.GetReportStatistics)
+		protected.GET("/reports/popular", h.Report.GetPopularReports)
+		protected.GET("/reports/recent-executions", h.Report.GetRecentExecutions)
+		protected.POST("/reports/import", h.Report.ImportReports)
 	}
 }
