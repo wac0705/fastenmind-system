@@ -115,7 +115,7 @@ export default function PWAInstallBanner() {
             <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
               <p className="text-xs text-gray-600">
                 <span className="font-medium">提示：</span>
-                {navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')
+                {typeof navigator !== 'undefined' && (navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad'))
                   ? ' 在 Safari 中，點擊分享按鈕然後選擇「加入主畫面」'
                   : ' 點擊瀏覽器網址欄右側的安裝按鈕'}
               </p>

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -25,12 +26,33 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host     string
-	Port     string
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
+	// Primary (write) database
+	Primary DBConnectionConfig `json:"primary"`
+	
+	// Read replicas
+	Replicas []DBConnectionConfig `json:"replicas"`
+	
+	// Connection pool settings
+	MaxOpenConns    int `json:"max_open_conns"`
+	MaxIdleConns    int `json:"max_idle_conns"`
+	ConnMaxLifetime int `json:"conn_max_lifetime_minutes"`
+	
+	// Read/Write separation settings
+	ReadWriteSeparation bool `json:"read_write_separation"`
+	PreferPrimaryReads  bool `json:"prefer_primary_reads"`
+}
+
+// DBConnectionConfig holds configuration for a single database connection
+type DBConnectionConfig struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Database string `json:"database"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	SSLMode  string `json:"ssl_mode"`
+	
+	// Weight for load balancing (higher = more traffic)
+	Weight int `json:"weight"`
 }
 
 type JWTConfig struct {
@@ -72,12 +94,20 @@ func New() *Config {
 			Environment: getEnv("SERVER_ENV", "development"),
 		},
 		Database: DatabaseConfig{
-			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", "fastenmind"),
-			Password: getEnv("DB_PASSWORD", "fastenmind123"),
-			DBName:   getEnv("DB_NAME", "fastenmind_db"),
-			SSLMode:  getEnv("DB_SSL_MODE", "disable"),
+			Primary: DBConnectionConfig{
+				Host:     getEnv("DB_PRIMARY_HOST", "localhost"),
+				Port:     getEnvAsInt("DB_PRIMARY_PORT", 5432),
+				Database: getEnv("DB_PRIMARY_NAME", "fastenmind_db"),
+				Username: getEnv("DB_PRIMARY_USER", "fastenmind"),
+				Password: getEnv("DB_PRIMARY_PASSWORD", "fastenmind123"),
+				SSLMode:  getEnv("DB_PRIMARY_SSL_MODE", "disable"),
+				Weight:   1,
+			},
+			MaxOpenConns:        getEnvAsInt("DB_MAX_OPEN_CONNS", 100),
+			MaxIdleConns:        getEnvAsInt("DB_MAX_IDLE_CONNS", 10),
+			ConnMaxLifetime:     getEnvAsInt("DB_CONN_MAX_LIFETIME_MINUTES", 60),
+			ReadWriteSeparation: getEnvAsBool("DB_READ_WRITE_SEPARATION", false),
+			PreferPrimaryReads:  getEnvAsBool("DB_PREFER_PRIMARY_READS", false),
 		},
 		JWT: JWTConfig{
 			SecretKey:              getEnv("JWT_SECRET_KEY", "your-secret-key"),
@@ -143,4 +173,12 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 		return value
 	}
 	return defaultValue
+}
+
+// DSN returns the database connection string
+func (c DBConnectionConfig) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		c.Host, c.Port, c.Username, c.Password, c.Database, c.SSLMode,
+	)
 }

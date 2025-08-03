@@ -17,8 +17,8 @@ type GormDB struct {
 
 // NewGorm creates a new GORM database connection
 func NewGorm(cfg config.DatabaseConfig) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode)
+	// Use primary database configuration
+	dsn := cfg.Primary.DSN()
 
 	// Configure GORM
 	gormConfig := &gorm.Config{

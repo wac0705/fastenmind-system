@@ -1,0 +1,101 @@
+# Docker Compose file to simulate Zeabur environment locally
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: fastenmind-postgres
+    environment:
+      POSTGRES_DB: fastenmind_db
+      POSTGRES_USER: fastenmind
+      POSTGRES_PASSWORD: fastenmind123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - fastenmind-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fastenmind -d fastenmind_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: fastenmind-redis
+    command: redis-server --requirepass redis123
+    environment:
+      REDIS_PASSWORD: redis123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fastenmind-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fastenmind-backend
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_ENV=production
+      - DB_PRIMARY_HOST=postgres
+      - DB_PRIMARY_PORT=5432
+      - DB_PRIMARY_NAME=fastenmind_db
+      - DB_PRIMARY_USER=fastenmind
+      - DB_PRIMARY_PASSWORD=fastenmind123
+      - DB_PRIMARY_SSL_MODE=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis123
+      - JWT_SECRET_KEY=zeabur-test-secret-key
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fastenmind-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fastenmind-frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_TELEMETRY_DISABLED=1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - fastenmind-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  fastenmind-network:
+    driver: bridge

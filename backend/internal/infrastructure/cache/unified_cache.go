@@ -2,14 +2,24 @@ package cache
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// Cache defines the basic cache interface
+type Cache interface {
+	Get(ctx context.Context, key string) (interface{}, error)
+	Set(ctx context.Context, key string, value interface{}, ttl time.Duration) error
+	Delete(ctx context.Context, key string) error
+}
+
+// ErrCacheMiss is returned when a cache key is not found
+var ErrCacheMiss = errors.New("cache miss")
 
 // UnifiedCacheStrategy provides a unified caching layer
 type UnifiedCacheStrategy struct {

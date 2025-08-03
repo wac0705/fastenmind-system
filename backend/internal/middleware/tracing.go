@@ -1,12 +1,14 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/fastenmind/fastener-api/internal/infrastructure/tracing"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -81,10 +83,10 @@ func Tracing(config TracingConfig) echo.MiddlewareFunc {
 				semconv.HTTPTargetKey.String(c.Request().URL.Path),
 				semconv.HTTPRouteKey.String(c.Path()),
 				semconv.HTTPSchemeKey.String(c.Scheme()),
-				semconv.HTTPHostKey.String(c.Request().Host),
+				attribute.String("http.host", c.Request().Host),
 				semconv.HTTPUserAgentKey.String(c.Request().UserAgent()),
 				semconv.HTTPRequestContentLengthKey.Int64(c.Request().ContentLength),
-				semconv.NetPeerIPKey.String(c.RealIP()),
+				attribute.String("net.peer.ip", c.RealIP()),
 			}
 			
 			// Add custom attributes
@@ -117,15 +119,9 @@ func Tracing(config TracingConfig) echo.MiddlewareFunc {
 			// Set span status based on HTTP status
 			if err != nil {
 				span.RecordError(err)
-				span.SetStatus(oteltrace.Status{
-					Code:        oteltrace.StatusError,
-					Description: err.Error(),
-				})
+				span.SetStatus(codes.Error, err.Error())
 			} else if c.Response().Status >= 400 {
-				span.SetStatus(oteltrace.Status{
-					Code:        oteltrace.StatusError,
-					Description: fmt.Sprintf("HTTP %d", c.Response().Status),
-				})
+				span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", c.Response().Status))
 			}
 			
 			return err
@@ -203,10 +199,7 @@ func AsyncOperationTracing(tracer *tracing.Tracer, operationName string, fn func
 		
 		if err := fn(ctx); err != nil {
 			span.RecordError(err)
-			span.SetStatus(oteltrace.Status{
-				Code:        oteltrace.StatusError,
-				Description: err.Error(),
-			})
+			span.SetStatus(codes.Error, err.Error())
 		}
 	}()
 }
@@ -225,10 +218,7 @@ func TraceGRPCClient(ctx context.Context, tracer *tracing.Tracer, method string,
 	err := fn(ctx)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(oteltrace.Status{
-			Code:        oteltrace.StatusError,
-			Description: err.Error(),
-		})
+		span.SetStatus(codes.Error, err.Error())
 	}
 	
 	return err

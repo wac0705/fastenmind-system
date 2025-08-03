@@ -100,7 +100,7 @@ export default function MobilePage() {
   // PWA 初始化
   useEffect(() => {
     // 檢查網路狀態
-    const updateOnlineStatus = () => setIsOnline(navigator.onLine)
+    const updateOnlineStatus = () => setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
     window.addEventListener('online', updateOnlineStatus)
     window.addEventListener('offline', updateOnlineStatus)
 

@@ -3,10 +3,12 @@ package tracing
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -156,7 +158,7 @@ func (t *Tracer) WithSpan(ctx context.Context, spanName string, fn func(context.
 	err := fn(ctx)
 	if err != nil {
 		span.RecordError(err)
-		span.SetStatus(trace.Status{Code: trace.StatusError, Description: err.Error()})
+		span.SetStatus(codes.Error, err.Error())
 	}
 	
 	return err
@@ -194,7 +196,7 @@ func ContextWithSpan(ctx context.Context, span trace.Span) context.Context {
 func RecordError(ctx context.Context, err error, opts ...trace.EventOption) {
 	span := SpanFromContext(ctx)
 	span.RecordError(err, opts...)
-	span.SetStatus(trace.Status{Code: trace.StatusError, Description: err.Error()})
+	span.SetStatus(codes.Error, err.Error())
 }
 
 // AddEvent adds an event to the current span
@@ -210,9 +212,9 @@ func SetAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 }
 
 // SetStatus sets the status of the current span
-func SetStatus(ctx context.Context, code trace.StatusCode, description string) {
+func SetStatus(ctx context.Context, code codes.Code, description string) {
 	span := SpanFromContext(ctx)
-	span.SetStatus(trace.Status{Code: code, Description: description})
+	span.SetStatus(code, description)
 }
 
 // TraceID returns the trace ID from the context

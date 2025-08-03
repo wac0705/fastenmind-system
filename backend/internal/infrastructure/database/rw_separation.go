@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/fastenmind/fastener-api/internal/config"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/plugin/dbresolver"
@@ -19,9 +21,9 @@ type ReadWriteDB struct {
 }
 
 // NewReadWriteDB creates a new read/write separated database connection
-func NewReadWriteDB(writeConfig Config, readConfigs []Config) (*ReadWriteDB, error) {
+func NewReadWriteDB(writeConfig config.DBConnectionConfig, readConfigs []config.DBConnectionConfig) (*ReadWriteDB, error) {
 	// Initialize write database
-	writeDB, err := Connect(writeConfig)
+	writeDB, err := gorm.Open(postgres.Open(writeConfig.DSN()), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to write database: %w", err)
 	}
@@ -29,7 +31,7 @@ func NewReadWriteDB(writeConfig Config, readConfigs []Config) (*ReadWriteDB, err
 	// Initialize read databases
 	readDBs := make([]*gorm.DB, 0, len(readConfigs))
 	for i, readConfig := range readConfigs {
-		readDB, err := Connect(readConfig)
+		readDB, err := gorm.Open(postgres.Open(readConfig.DSN()), &gorm.Config{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to read database %d: %w", i, err)
 		}
@@ -48,24 +50,20 @@ func NewReadWriteDB(writeConfig Config, readConfigs []Config) (*ReadWriteDB, err
 }
 
 // ConfigureDBResolver configures GORM's built-in DB resolver for read/write separation
-func ConfigureDBResolver(db *gorm.DB, readConfigs []Config) error {
-	resolverConfig := dbresolver.Config{
-		Policy: dbresolver.RandomPolicy{}, // or RoundRobinPolicy{}
-	}
-
+func ConfigureDBResolver(db *gorm.DB, readConfigs []config.DBConnectionConfig) error {
 	// Create read replicas
 	replicas := make([]gorm.Dialector, 0, len(readConfigs))
 	for _, cfg := range readConfigs {
-		dialector, err := createDialector(cfg)
-		if err != nil {
-			return fmt.Errorf("failed to create dialector for read replica: %w", err)
-		}
+		dialector := postgres.Open(cfg.DSN())
 		replicas = append(replicas, dialector)
 	}
 
-	// Register resolver
+	// Register resolver with read replicas
 	err := db.Use(
-		dbresolver.Register(resolverConfig, replicas...).
+		dbresolver.Register(dbresolver.Config{
+			Replicas: replicas,
+			Policy:   dbresolver.RandomPolicy{},
+		}).
 			SetMaxIdleConns(10).
 			SetMaxOpenConns(100).
 			SetConnMaxLifetime(time.Hour),
@@ -155,7 +153,8 @@ func (m *ReadWriteMiddleware) Initialize(db *gorm.DB) error {
 
 // routeRead routes read operations to read replicas
 func (m *ReadWriteMiddleware) routeRead(db *gorm.DB) {
-	if db.Statement.Clauses["FOR"] != nil {
+	// Check if there's a locking clause (FOR UPDATE/SHARE)
+	if _, exists := db.Statement.Clauses["FOR"]; exists {
 		// FOR UPDATE/SHARE queries should go to primary
 		db.Statement.ConnPool = m.rw.ReadPreferPrimary().Statement.ConnPool
 		return

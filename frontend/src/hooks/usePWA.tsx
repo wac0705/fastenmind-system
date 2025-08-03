@@ -18,25 +18,27 @@ export function usePWA() {
   const [state, setState] = useState<PWAState>({
     isInstallable: false,
     isInstalled: false,
-    isOffline: !navigator.onLine,
+    isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
     deferredPrompt: null,
     swRegistration: null,
   });
 
   // Check if app is installed
   useEffect(() => {
-    if ('getInstalledRelatedApps' in navigator) {
+    if (typeof navigator !== 'undefined' && 'getInstalledRelatedApps' in navigator) {
       (navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
         setState(prev => ({ ...prev, isInstalled: apps.length > 0 }));
       });
     }
 
     // Check if running as PWA
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                        (window.navigator as any).standalone ||
-                        document.referrer.includes('android-app://');
-    
-    setState(prev => ({ ...prev, isInstalled: isStandalone }));
+    if (typeof window !== 'undefined') {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                          (window.navigator as any).standalone ||
+                          document.referrer.includes('android-app://');
+      
+      setState(prev => ({ ...prev, isInstalled: isStandalone }));
+    }
   }, []);
 
   // Handle beforeinstallprompt event
@@ -81,7 +83,7 @@ export function usePWA() {
 
   // Register service worker
   useEffect(() => {
-    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -92,7 +94,7 @@ export function usePWA() {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                if (newWorker.state === 'installed' && typeof navigator !== 'undefined' && navigator.serviceWorker.controller) {
                   toast(
                     (t) => (
                       <div>
@@ -256,13 +258,15 @@ export function usePWA() {
           resolve(event.data.success);
         };
 
-        navigator.serviceWorker.controller?.postMessage(
-          {
-            type: 'CACHE_RESOURCES',
-            resources: urls,
-          },
-          [messageChannel.port2]
-        );
+        if (typeof navigator !== 'undefined') {
+          navigator.serviceWorker.controller?.postMessage(
+            {
+              type: 'CACHE_RESOURCES',
+              resources: urls,
+            },
+            [messageChannel.port2]
+          );
+        }
 
         // Timeout after 5 seconds
         setTimeout(() => resolve(false), 5000);

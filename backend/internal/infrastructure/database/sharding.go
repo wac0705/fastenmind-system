@@ -9,7 +9,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/fastenmind/fastener-api/internal/config"
 	"github.com/google/uuid"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +40,7 @@ type Shard struct {
 	ID       int
 	Name     string
 	DB       *gorm.DB
-	Config   DBConnectionConfig
+	Config   config.DBConnectionConfig
 	Weight   int
 	ReadOnly bool
 	Active   bool
@@ -99,12 +101,8 @@ func (sm *ShardManager) AddShard(shard *Shard) error {
 	}
 	
 	// Connect to shard database
-	db, err := Connect(Config{
-		DSN:             shard.Config.DSN(),
-		MaxOpenConns:    100,
-		MaxIdleConns:    10,
-		ConnMaxLifetime: 60,
-	})
+	dsn := shard.Config.DSN()
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to connect to shard %d: %w", shard.ID, err)
 	}

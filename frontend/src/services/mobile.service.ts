@@ -650,7 +650,7 @@ class MobileService {
 
   // PWA Utilities
   async registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-    if ('serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js')
         console.log('Service Worker registered:', registration)
@@ -765,6 +765,19 @@ class MobileService {
 
   // Device Information
   getDeviceInfo(): Partial<RegisterDeviceRequest> {
+    if (typeof navigator === 'undefined') {
+      return {
+        platform: 'web',
+        device_type: 'desktop',
+        os_version: 'unknown',
+        app_version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+        device_name: 'Web Browser',
+        time_zone: 'UTC',
+        language: 'en',
+        country: 'TW'
+      }
+    }
+    
     const userAgent = navigator.userAgent
     const platform = this.getPlatform()
     
@@ -781,6 +794,7 @@ class MobileService {
   }
 
   private getPlatform(): string {
+    if (typeof navigator === 'undefined') return 'web'
     const userAgent = navigator.userAgent.toLowerCase()
     if (/iphone|ipad|ipod/.test(userAgent)) return 'ios'
     if (/android/.test(userAgent)) return 'android'
@@ -788,6 +802,7 @@ class MobileService {
   }
 
   private getDeviceType(): string {
+    if (typeof navigator === 'undefined') return 'desktop'
     const userAgent = navigator.userAgent.toLowerCase()
     if (/tablet|ipad/.test(userAgent)) return 'tablet'
     if (/mobile|iphone|android/.test(userAgent)) return 'phone'
@@ -795,12 +810,14 @@ class MobileService {
   }
 
   private getOSVersion(): string {
+    if (typeof navigator === 'undefined') return 'unknown'
     const userAgent = navigator.userAgent
     const match = userAgent.match(/(iPhone OS|Android|Windows NT|Mac OS X) ([\d._]+)/)
     return match ? match[2].replace(/_/g, '.') : 'unknown'
   }
 
   private getDeviceName(): string {
+    if (typeof navigator === 'undefined') return 'Web Browser'
     const userAgent = navigator.userAgent
     if (/iPhone/.test(userAgent)) return 'iPhone'
     if (/iPad/.test(userAgent)) return 'iPad'

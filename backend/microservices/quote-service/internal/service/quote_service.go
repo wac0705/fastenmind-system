@@ -5,19 +5,19 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	quotev1 "github.com/fastenmind/quote-service/api/v1"
 	"github.com/fastenmind/fastener-api/internal/application/command"
 	"github.com/fastenmind/fastener-api/internal/application/query"
+	"github.com/fastenmind/fastener-api/internal/domain/valueobject"
+	"github.com/fastenmind/fastener-api/internal/microservices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 // QuoteService gRPC 報價服務實現
 type QuoteService struct {
-	quotev1.UnimplementedQuoteServiceServer
+	microservices.UnimplementedQuoteServiceServer
 	commandBus command.Bus
 	queryBus   query.Bus
 	logger     *zap.Logger
@@ -33,7 +33,7 @@ func NewQuoteService(commandBus command.Bus, queryBus query.Bus, logger *zap.Log
 }
 
 // CreateQuote 創建報價
-func (s *QuoteService) CreateQuote(ctx context.Context, req *quotev1.CreateQuoteRequest) (*quotev1.CreateQuoteResponse, error) {
+func (s *QuoteService) CreateQuote(ctx context.Context, req *microservices.CreateQuoteRequest) (*microservices.CreateQuoteResponse, error) {
 	// 驗證請求
 	if req.CustomerId == "" {
 		return nil, status.Error(codes.InvalidArgument, "customer_id is required")
@@ -81,14 +81,14 @@ func (s *QuoteService) CreateQuote(ctx context.Context, req *quotev1.CreateQuote
 	}
 	
 	// 返回響應
-	return &quotev1.CreateQuoteResponse{
+	return &microservices.CreateQuoteResponse{
 		Id:          cmd.GetCommandID().String(),
 		QuoteNumber: "Q-" + cmd.GetCommandID().String()[:8],
 	}, nil
 }
 
 // GetQuote 獲取報價
-func (s *QuoteService) GetQuote(ctx context.Context, req *quotev1.GetQuoteRequest) (*quotev1.Quote, error) {
+func (s *QuoteService) GetQuote(ctx context.Context, req *microservices.GetQuoteRequest) (*microservices.Quote, error) {
 	// 驗證請求
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -118,7 +118,7 @@ func (s *QuoteService) GetQuote(ctx context.Context, req *quotev1.GetQuoteReques
 }
 
 // ListQuotes 列出報價
-func (s *QuoteService) ListQuotes(ctx context.Context, req *quotev1.ListQuotesRequest) (*quotev1.ListQuotesResponse, error) {
+func (s *QuoteService) ListQuotes(ctx context.Context, req *microservices.ListQuotesRequest) (*microservices.ListQuotesResponse, error) {
 	// 構建查詢
 	q := query.NewListQuotesQuery()
 	
@@ -164,12 +164,12 @@ func (s *QuoteService) ListQuotes(ctx context.Context, req *quotev1.ListQuotesRe
 	// 轉換響應
 	pageResult := result.(*query.PageResult[query.QuoteDTO])
 	
-	quotes := make([]*quotev1.Quote, len(pageResult.Items))
+	quotes := make([]*microservices.Quote, len(pageResult.Items))
 	for i, dto := range pageResult.Items {
 		quotes[i] = s.mapToProtoQuote(&dto)
 	}
 	
-	return &quotev1.ListQuotesResponse{
+	return &microservices.ListQuotesResponse{
 		Quotes:     quotes,
 		TotalCount: pageResult.TotalItems,
 		Page:       int32(pageResult.Page),
@@ -178,7 +178,7 @@ func (s *QuoteService) ListQuotes(ctx context.Context, req *quotev1.ListQuotesRe
 }
 
 // UpdateQuote 更新報價
-func (s *QuoteService) UpdateQuote(ctx context.Context, req *quotev1.UpdateQuoteRequest) (*quotev1.Quote, error) {
+func (s *QuoteService) UpdateQuote(ctx context.Context, req *microservices.UpdateQuoteRequest) (*microservices.Quote, error) {
 	// 驗證請求
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -201,11 +201,11 @@ func (s *QuoteService) UpdateQuote(ctx context.Context, req *quotev1.UpdateQuote
 	}
 	
 	// 獲取更新後的報價
-	return s.GetQuote(ctx, &quotev1.GetQuoteRequest{Id: req.Id})
+	return s.GetQuote(ctx, &microservices.GetQuoteRequest{Id: req.Id})
 }
 
 // SubmitQuote 提交報價
-func (s *QuoteService) SubmitQuote(ctx context.Context, req *quotev1.SubmitQuoteRequest) (*emptypb.Empty, error) {
+func (s *QuoteService) SubmitQuote(ctx context.Context, req *microservices.SubmitQuoteRequest) (*microservices.Empty, error) {
 	// 驗證請求
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -225,11 +225,11 @@ func (s *QuoteService) SubmitQuote(ctx context.Context, req *quotev1.SubmitQuote
 		return nil, status.Error(codes.Internal, "failed to submit quote")
 	}
 	
-	return &emptypb.Empty{}, nil
+	return &microservices.Empty{}, nil
 }
 
 // ApproveQuote 批准報價
-func (s *QuoteService) ApproveQuote(ctx context.Context, req *quotev1.ApproveQuoteRequest) (*emptypb.Empty, error) {
+func (s *QuoteService) ApproveQuote(ctx context.Context, req *microservices.ApproveQuoteRequest) (*microservices.Empty, error) {
 	// 驗證請求
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -258,11 +258,11 @@ func (s *QuoteService) ApproveQuote(ctx context.Context, req *quotev1.ApproveQuo
 		return nil, status.Error(codes.Internal, "failed to approve quote")
 	}
 	
-	return &emptypb.Empty{}, nil
+	return &microservices.Empty{}, nil
 }
 
 // RejectQuote 拒絕報價
-func (s *QuoteService) RejectQuote(ctx context.Context, req *quotev1.RejectQuoteRequest) (*emptypb.Empty, error) {
+func (s *QuoteService) RejectQuote(ctx context.Context, req *microservices.RejectQuoteRequest) (*microservices.Empty, error) {
 	// 驗證請求
 	if req.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -286,11 +286,11 @@ func (s *QuoteService) RejectQuote(ctx context.Context, req *quotev1.RejectQuote
 		return nil, status.Error(codes.Internal, "failed to reject quote")
 	}
 	
-	return &emptypb.Empty{}, nil
+	return &microservices.Empty{}, nil
 }
 
 // GetQuoteStatistics 獲取報價統計
-func (s *QuoteService) GetQuoteStatistics(ctx context.Context, req *quotev1.GetQuoteStatisticsRequest) (*quotev1.QuoteStatistics, error) {
+func (s *QuoteService) GetQuoteStatistics(ctx context.Context, req *microservices.GetQuoteStatisticsRequest) (*microservices.QuoteStatistics, error) {
 	// 驗證請求
 	if req.CompanyId == "" {
 		return nil, status.Error(codes.InvalidArgument, "company_id is required")
@@ -318,7 +318,7 @@ func (s *QuoteService) GetQuoteStatistics(ctx context.Context, req *quotev1.GetQ
 	// 轉換響應
 	stats := result.(*query.QuoteStatisticsDTO)
 	
-	return &quotev1.QuoteStatistics{
+	return &microservices.QuoteStatistics{
 		TotalQuotes:     int32(stats.TotalQuotes),
 		QuotesByStatus:  s.mapToInt32Map(stats.QuotesByStatus),
 		TotalValue:      stats.TotalValue,
@@ -331,57 +331,57 @@ func (s *QuoteService) GetQuoteStatistics(ctx context.Context, req *quotev1.GetQ
 
 // 私有方法
 
-func (s *QuoteService) mapToProtoQuote(dto *query.QuoteDTO) *quotev1.Quote {
-	return &quotev1.Quote{
+func (s *QuoteService) mapToProtoQuote(dto *query.QuoteDTO) *microservices.Quote {
+	return &microservices.Quote{
 		Id:           dto.ID.String(),
 		QuoteNumber:  dto.QuoteNumber,
 		CustomerId:   dto.CustomerID.String(),
 		CompanyId:    dto.CompanyID.String(),
 		Status:       s.mapToProtoStatus(dto.Status),
-		ValidUntil:   timestamppb.New(dto.ValidUntil),
+		ValidUntil:   dto.ValidUntil,
 		Items:        s.mapToProtoItems(dto.Items),
 		Terms:        s.mapToProtoTerms(dto.Terms),
-		PricingSummary: &quotev1.PricingSummary{
+		PricingSummary: microservices.PricingSummary{
 			Subtotal:      dto.PricingSummary.Subtotal,
 			TotalTax:      dto.PricingSummary.TotalTax,
 			TotalDiscount: dto.PricingSummary.TotalDiscount,
 			Total:         dto.PricingSummary.Total,
 			Currency:      dto.PricingSummary.Currency,
 		},
-		CreatedAt: timestamppb.New(dto.CreatedAt),
-		UpdatedAt: timestamppb.New(dto.UpdatedAt),
+		CreatedAt: dto.CreatedAt,
+		UpdatedAt: dto.UpdatedAt,
 		Version:   int32(dto.Version),
 	}
 }
 
-func (s *QuoteService) mapToProtoStatus(status valueobject.QuoteStatus) quotev1.QuoteStatus {
+func (s *QuoteService) mapToProtoStatus(status valueobject.QuoteStatus) microservices.QuoteStatus {
 	switch status {
 	case valueobject.QuoteStatusDraft:
-		return quotev1.QuoteStatus_QUOTE_STATUS_DRAFT
+		return microservices.QuoteStatus_QUOTE_STATUS_DRAFT
 	case valueobject.QuoteStatusPending:
-		return quotev1.QuoteStatus_QUOTE_STATUS_PENDING
+		return microservices.QuoteStatus_QUOTE_STATUS_PENDING
 	case valueobject.QuoteStatusApproved:
-		return quotev1.QuoteStatus_QUOTE_STATUS_APPROVED
+		return microservices.QuoteStatus_QUOTE_STATUS_APPROVED
 	case valueobject.QuoteStatusRejected:
-		return quotev1.QuoteStatus_QUOTE_STATUS_REJECTED
+		return microservices.QuoteStatus_QUOTE_STATUS_REJECTED
 	case valueobject.QuoteStatusExpired:
-		return quotev1.QuoteStatus_QUOTE_STATUS_EXPIRED
+		return microservices.QuoteStatus_QUOTE_STATUS_EXPIRED
 	case valueobject.QuoteStatusCancelled:
-		return quotev1.QuoteStatus_QUOTE_STATUS_CANCELLED
+		return microservices.QuoteStatus_QUOTE_STATUS_CANCELLED
 	default:
-		return quotev1.QuoteStatus_QUOTE_STATUS_UNSPECIFIED
+		return microservices.QuoteStatus_QUOTE_STATUS_UNSPECIFIED
 	}
 }
 
-func (s *QuoteService) mapToProtoItems(items []query.QuoteItemDTO) []*quotev1.QuoteItem {
-	result := make([]*quotev1.QuoteItem, len(items))
+func (s *QuoteService) mapToProtoItems(items []query.QuoteItemDTO) []microservices.QuoteItem {
+	result := make([]microservices.QuoteItem, len(items))
 	for i, item := range items {
-		result[i] = &quotev1.QuoteItem{
+		result[i] = microservices.QuoteItem{
 			Id:           item.ID.String(),
 			ProductId:    item.ProductID.String(),
 			ProductName:  item.ProductName,
 			Specification: item.Specification,
-			Material: &quotev1.Material{
+			Material: microservices.Material{
 				Type:        item.Material.Type,
 				Grade:       item.Material.Grade,
 				Standard:    item.Material.Standard,
@@ -400,21 +400,21 @@ func (s *QuoteService) mapToProtoItems(items []query.QuoteItemDTO) []*quotev1.Qu
 	return result
 }
 
-func (s *QuoteService) mapToProtoTerms(terms query.QuoteTermsDTO) *quotev1.QuoteTerms {
-	return &quotev1.QuoteTerms{
-		PaymentTerms: &quotev1.PaymentTerms{
+func (s *QuoteService) mapToProtoTerms(terms query.QuoteTermsDTO) microservices.QuoteTerms {
+	return microservices.QuoteTerms{
+		PaymentTerms: microservices.PaymentTerms{
 			Type:           terms.PaymentTerms.Type,
 			NetDays:        int32(terms.PaymentTerms.NetDays),
 			DepositPercent: terms.PaymentTerms.DepositPercent,
 			Description:    terms.PaymentTerms.Description,
 		},
-		DeliveryTerms: &quotev1.DeliveryTerms{
+		DeliveryTerms: microservices.DeliveryTerms{
 			Incoterm:     terms.DeliveryTerms.Incoterm,
 			LeadTimeDays: int32(terms.DeliveryTerms.LeadTimeDays),
 			Location:     terms.DeliveryTerms.Location,
 			Description:  terms.DeliveryTerms.Description,
 		},
-		WarrantyTerms: &quotev1.WarrantyTerms{
+		WarrantyTerms: microservices.WarrantyTerms{
 			Duration:    terms.WarrantyTerms.Duration,
 			Type:        terms.WarrantyTerms.Type,
 			Coverage:    terms.WarrantyTerms.Coverage,
@@ -435,10 +435,10 @@ func (s *QuoteService) mapToInt32Map(m map[string]int) map[string]int32 {
 	return result
 }
 
-func (s *QuoteService) mapToProtoCustomerStats(stats []query.CustomerStatDTO) []*quotev1.CustomerStat {
-	result := make([]*quotev1.CustomerStat, len(stats))
+func (s *QuoteService) mapToProtoCustomerStats(stats []query.CustomerStatDTO) []microservices.CustomerStat {
+	result := make([]microservices.CustomerStat, len(stats))
 	for i, stat := range stats {
-		result[i] = &quotev1.CustomerStat{
+		result[i] = microservices.CustomerStat{
 			CustomerId:   stat.CustomerID.String(),
 			CustomerName: stat.CustomerName,
 			QuoteCount:   int32(stat.QuoteCount),
@@ -448,10 +448,10 @@ func (s *QuoteService) mapToProtoCustomerStats(stats []query.CustomerStatDTO) []
 	return result
 }
 
-func (s *QuoteService) mapToProtoProductStats(stats []query.ProductStatDTO) []*quotev1.ProductStat {
-	result := make([]*quotev1.ProductStat, len(stats))
+func (s *QuoteService) mapToProtoProductStats(stats []query.ProductStatDTO) []microservices.ProductStat {
+	result := make([]microservices.ProductStat, len(stats))
 	for i, stat := range stats {
-		result[i] = &quotev1.ProductStat{
+		result[i] = microservices.ProductStat{
 			ProductId:     stat.ProductID.String(),
 			ProductName:   stat.ProductName,
 			ProductSku:    stat.ProductSKU,

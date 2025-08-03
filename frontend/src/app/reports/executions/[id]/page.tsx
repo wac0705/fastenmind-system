@@ -133,8 +133,13 @@ export default function ReportExecutionPage() {
 
   const handleShare = () => {
     const url = `${window.location.origin}/reports/executions/${executionId}/public`
-    navigator.clipboard.writeText(url)
-    toast({ title: '分享連結已複製' })
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url)
+      toast({ title: '分享連結已複製' })
+    } else {
+      // Fallback for older browsers or SSR
+      toast({ title: '請手動複製連結' })
+    }
   }
 
   const handlePrint = () => {

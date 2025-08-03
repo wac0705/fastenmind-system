@@ -14,8 +14,8 @@ import (
 	"go.elastic.co/apm/module/apmgorm"
 	"go.elastic.co/apm/module/apmhttp"
 	"github.com/newrelic/go-agent/v3/newrelic"
-	"github.com/DataDog/dd-trace-go/ddtrace"
-	"github.com/DataDog/dd-trace-go/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"gorm.io/gorm"
 )
 
