@@ -26,7 +26,23 @@
       "Bash(cmd.exe /c \"cd fastenmind-system\\backend && \"\"C:\\Program Files\\Go\\bin\\go.exe\"\" build -o fastenmind-api.exe ./cmd/server\")",
       "Bash(powershell:*)",
       "Bash(where go)",
-      "Bash(del internalmodelsintegration_missing.go)"
+      "Bash(del internalmodelsintegration_missing.go)",
+      "Bash($env:GOOS=\"linux\")",
+      "Bash($env:GOARCH=\"amd64\")",
+      "Bash(GOOS=linux GOARCH=amd64 go build -o fastenmind-api ./cmd/server)",
+      "Bash(tree:*)",
+      "Bash(npm install)",
+      "Bash(npm cache clean:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)",
+      "Bash(yarn install)",
+      "Bash(npm view:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(killall:*)",
+      "Bash(tasklist)",
+      "Bash(taskkill:*)"
     ],
     "deny": []
   }
